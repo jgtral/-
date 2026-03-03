@@ -25,7 +25,7 @@
         }
 
         #controls { width: 320px; }
-        #list-panel { width: 250px; min-height: 400px; }
+        #list-panel { width: 300px; min-height: 400px; } /* Slightly wider for new buttons */
 
         h3 { margin-top: 0; color: #333; }
         hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
@@ -58,13 +58,29 @@
             cursor: move; user-select: none; -webkit-user-select: none;
             border: 2px solid #2e7d32; border-radius: 4px;
             transform-origin: center center; box-sizing: border-box;
-            transition: outline 0.1s;
+            transition: outline 0.1s, opacity 0.2s; /* Added opacity transition */
         }
+
+        /* 固定狀態的樣式 */
+        .furniture-block.pinned {
+            border: 2px solid #555;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px);
+            cursor: not-allowed;
+        }
+        
+        /* 透明狀態 */
+        .furniture-block.translucent { opacity: 0.5; }
 
         /* 選取狀態的高亮與顯示旋轉鈕 */
         .furniture-block.selected { outline: 3px dashed #ff9800; outline-offset: 2px; }
         .furniture-block .rotate-handle { opacity: 0; pointer-events: none; transition: 0.2s; }
         .furniture-block.selected .rotate-handle { opacity: 1; pointer-events: auto; }
+
+        .rotate-handle {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            width: 18px; height: 18px; background-color: #ff9800; border: 2px solid white;
+            border-radius: 50%; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 5;
+        }
 
         .furniture-block .label-name {
             pointer-events: none; font-size: 13px; font-weight: bold; text-align: center; z-index: 2;
@@ -78,12 +94,6 @@
         .edge-bottom { bottom: 2px; left: 50%; transform: translateX(-50%); }
         .edge-left   { left: 2px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
         .edge-right  { right: 2px; top: 50%; transform: translateY(-50%) rotate(90deg); }
-
-        .rotate-handle {
-            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
-            width: 18px; height: 18px; background-color: #ff9800; border: 2px solid white;
-            border-radius: 50%; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 5;
-        }
 
         #toggle-delete-btn { width: 100%; margin-top: 10px; }
         #toggle-delete-btn.active { background-color: #f44336; }
@@ -100,8 +110,26 @@
         .list-item:active { cursor: grabbing; }
         .list-item.dragging { opacity: 0.5; border: 2px dashed #2196F3; }
         .list-item.selected { background-color: #e3f2fd; border-color: #2196F3; }
+        .list-item.pinned span.item-name { text-decoration: underline; color: #555; }
+        .list-item.translucent span.item-name { opacity: 0.5; } /* Visual cue in list */
         
-        .drag-indicator { font-size: 16px; color: #999; pointer-events: none; }
+        .list-controls { display: flex; align-items: center; gap: 5px; }
+        .layer-btn { padding: 2px 5px; font-size: 10px; background-color: #e0e0e0; color: #333; border: 1px solid #ccc; }
+        .layer-btn:hover { background-color: #d0d0d0; }
+        .drag-indicator { font-size: 16px; color: #999; margin-left: 5px; pointer-events: none; }
+
+        /* 外部控制按鈕樣式 */
+        #external-controls {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        #external-controls h4 { margin: 0 0 10px 0; font-size: 14px; color: #555; }
+        .ext-btn-group { display: flex; gap: 5px; flex-wrap: wrap;}
+        .ext-btn-group button { flex: 1; padding: 6px; font-size: 12px; min-width: 60px;}
+        .ext-btn-group button:disabled { background-color: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -139,39 +167,90 @@
             <button onclick="triggerFilePicker()" style="flex: 1; background-color: #009688;">匯入檔案</button>
         </div>
         <input type="file" id="file-input" style="display: none;" accept=".json" onchange="importJSON(event)">
+
+        <div id="external-controls">
+            <h4>選取家具控制</h4>
+            <div class="ext-btn-group">
+                <button id="ext-rot-h" onclick="rotateSelected(0)" disabled>↔ 轉向</button>
+                <button id="ext-rot-v" onclick="rotateSelected(90)" disabled>↕ 轉向</button>
+                <button id="ext-pin" onclick="togglePinSelected()" disabled>📌 固定</button>
+                <button id="ext-opacity" onclick="toggleOpacitySelected()" disabled>🌁 透明</button>
+            </div>
+        </div>
     </div>
 
     <div id="room-container"></div>
 
     <div id="list-panel" class="panel">
         <h3 style="font-size: 16px; margin-bottom: 10px;">家具圖層清單</h3>
-        <p style="font-size: 12px; color: #666; margin-top: 0;">越上方顯示在越上層 (可拖曳排序)</p>
+        <p style="font-size: 12px; color: #666; margin-top: 0;">越上方顯示在越上層 (可拖曳或點擊按鈕)</p>
         <ul id="furniture-list"></ul>
     </div>
 
     <script>
         const roomContainer = document.getElementById('room-container');
         const listContainer = document.getElementById('furniture-list');
+        const extRotHBtn = document.getElementById('ext-rot-h');
+        const extRotVBtn = document.getElementById('ext-rot-v');
+        const extPinBtn = document.getElementById('ext-pin');
+        const extOpacityBtn = document.getElementById('ext-opacity');
+        
         let isDeleteMode = false;
-        let blockCounter = 0; // 用於產生唯一 ID
+        let blockCounter = 0;
+        let selectedBlockId = null;
 
-        // 取消選取 (點擊畫布空白處)
         roomContainer.addEventListener('mousedown', (e) => {
             if (e.target === roomContainer) clearSelection();
         });
 
+        function updateExternalControls() {
+            const block = document.getElementById(selectedBlockId);
+            const isSelected = !!block;
+            
+            if (isSelected) {
+                const isPinned = block.dataset.pinned === "true";
+                const isTranslucent = block.dataset.translucent === "true";
+
+                extRotHBtn.disabled = isPinned;
+                extRotVBtn.disabled = isPinned;
+                extPinBtn.disabled = false;
+                extOpacityBtn.disabled = false;
+                
+                extPinBtn.innerHTML = isPinned ? '解開' : '📌 固定';
+                extPinBtn.style.backgroundColor = isPinned ? '#f44336' : '#9e9e9e';
+
+                extOpacityBtn.innerHTML = isTranslucent ? '恢復' : '🌁 透明';
+                extOpacityBtn.style.backgroundColor = isTranslucent ? '#FF9800' : '#607D8B';
+
+            } else {
+                extRotHBtn.disabled = true;
+                extRotVBtn.disabled = true;
+                extPinBtn.disabled = true;
+                extOpacityBtn.disabled = true;
+
+                extPinBtn.innerHTML = '📌 固定';
+                extPinBtn.style.backgroundColor = '';
+                extOpacityBtn.innerHTML = '🌁 透明';
+                extOpacityBtn.style.backgroundColor = '';
+            }
+        }
+
         function selectBlock(id) {
             if (isDeleteMode) return;
             clearSelection();
+            selectedBlockId = id;
             const block = document.getElementById(id);
             const li = document.getElementById('li-' + id);
             if (block) block.classList.add('selected');
             if (li) li.classList.add('selected');
+            updateExternalControls();
         }
 
         function clearSelection() {
+            selectedBlockId = null;
             document.querySelectorAll('.furniture-block').forEach(b => b.classList.remove('selected'));
             document.querySelectorAll('.list-item').forEach(li => li.classList.remove('selected'));
+            updateExternalControls();
         }
 
         function toggleDeleteMode() {
@@ -193,7 +272,6 @@
         function createFurniture(data) {
             const blockId = 'block-' + (blockCounter++);
             
-            // 建立畫布上的家具
             const block = document.createElement('div');
             block.id = blockId;
             block.className = 'furniture-block';
@@ -214,6 +292,15 @@
             `;
             
             if (isDeleteMode) block.classList.add('delete-mode-active');
+            
+            if (data.pinned) {
+                block.classList.add('pinned');
+                block.dataset.pinned = "true";
+            }
+            if (data.translucent) {
+                block.classList.add('translucent');
+                block.dataset.translucent = "true";
+            }
 
             const handle = document.createElement('div');
             handle.className = 'rotate-handle';
@@ -225,10 +312,9 @@
             roomContainer.appendChild(block);
             makeDraggableAndRotatable(block, handle, blockId);
 
-            // 建立側邊欄清單項目
-            addListItem(blockId, data.label);
+            addListItem(blockId, data.label, data.pinned, data.translucent);
             updateZIndices();
-            selectBlock(blockId); // 建立後自動選取
+            selectBlock(blockId);
         }
 
         function addBlock() {
@@ -237,34 +323,70 @@
             const label = document.getElementById('block-label').value;
 
             createFurniture({
-                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0
+                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0, pinned: false, translucent: false
             });
         }
 
-        // --- 清單與圖層邏輯 ---
-        function addListItem(id, labelText) {
+        function addListItem(id, labelText, isPinned, isTranslucent) {
             const li = document.createElement('li');
             li.className = 'list-item';
             li.id = 'li-' + id;
             li.dataset.refId = id;
             li.draggable = true;
-            li.innerHTML = `<span>${labelText}</span><span class="drag-indicator">≡</span>`;
+            if (isPinned) li.classList.add('pinned');
+            if (isTranslucent) li.classList.add('translucent');
+            
+            li.innerHTML = `
+                <span class="item-name">${labelText}</span>
+                <div class="list-controls">
+                    <button class="layer-btn up-btn" title="上移圖層">▲</button>
+                    <button class="layer-btn down-btn" title="下移圖層">▼</button>
+                    <span class="drag-indicator">≡</span>
+                </div>
+            `;
 
-            // 點擊清單選取對應家具
-            li.addEventListener('mousedown', () => selectBlock(id));
+            // List item selection
+            li.addEventListener('mousedown', (e) => {
+                // Prevent selection if clicking layer buttons
+                if(!e.target.classList.contains('layer-btn')) {
+                    selectBlock(id);
+                }
+            });
 
-            // 拖曳事件
+            // Drag and drop events
             li.addEventListener('dragstart', () => li.classList.add('dragging'));
             li.addEventListener('dragend', () => {
                 li.classList.remove('dragging');
-                updateZIndices(); // 拖曳結束後更新圖層
+                updateZIndices();
             });
 
-            // 新家具預設加在清單最上方 (最上層)
+            // Layer up/down button events
+            const upBtn = li.querySelector('.up-btn');
+            const downBtn = li.querySelector('.down-btn');
+
+            upBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent selecting the item when clicking the button
+                const prevSibling = li.previousElementSibling;
+                if (prevSibling) {
+                    listContainer.insertBefore(li, prevSibling);
+                    updateZIndices();
+                }
+            });
+
+            downBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const nextSibling = li.nextElementSibling;
+                if (nextSibling) {
+                    // Insert after the next sibling (before the one after that)
+                    listContainer.insertBefore(nextSibling, li);
+                    updateZIndices();
+                }
+            });
+
+
             listContainer.insertBefore(li, listContainer.firstChild);
         }
 
-        // 處理清單的拖放排序
         listContainer.addEventListener('dragover', e => {
             e.preventDefault();
             const afterElement = getDragAfterElement(listContainer, e.clientY);
@@ -289,7 +411,6 @@
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        // 根據清單順序更新 Z-Index (越上面的越前面)
         function updateZIndices() {
             const items = document.querySelectorAll('.list-item');
             let z = items.length + 10;
@@ -299,9 +420,7 @@
             });
         }
 
-        // --- 檔案操作 ---
         function downloadJSON() {
-            // 根據清單順序匯出，確保匯入時圖層順序正確
             const items = document.querySelectorAll('.list-item');
             const data = [];
             items.forEach(li => {
@@ -313,14 +432,16 @@
                         height: block.style.height,
                         top: block.style.top,
                         left: block.style.left,
-                        rotation: block.dataset.rotation
+                        rotation: block.dataset.rotation,
+                        pinned: block.dataset.pinned === "true",
+                        translucent: block.dataset.translucent === "true"
                     });
                 }
             });
 
             if (data.length === 0) return alert("房間內沒有家具！");
 
-            const blob = new Blob([JSON.stringify(data.reverse(), null, 2)], { type: "application/json" }); // reverse 是為了讓匯入時順序正確
+            const blob = new Blob([JSON.stringify(data.reverse(), null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
@@ -349,12 +470,124 @@
             reader.readAsText(file);
         }
 
-        // --- 拖曳與旋轉互動 ---
         function getRotatedBounds(w, h, angleDeg) {
             const rad = angleDeg * Math.PI / 180;
             const sin = Math.abs(Math.sin(rad));
             const cos = Math.abs(Math.cos(rad));
             return { width: w * cos + h * sin, height: w * sin + h * cos };
+        }
+        
+        function getPinnedBlocksBounds(excludeBlockId) {
+            const pinnedBounds = [];
+            document.querySelectorAll('.furniture-block.pinned').forEach(b => {
+                if (b.id === excludeBlockId) return;
+                const bW = parseFloat(b.style.width);
+                const bH = parseFloat(b.style.height);
+                const left = parseFloat(b.style.left);
+                const top = parseFloat(b.style.top);
+                const rot = parseFloat(b.dataset.rotation || 0);
+                const bounds = getRotatedBounds(bW, bH, rot);
+                const offW = (bounds.width - bW) / 2;
+                const offH = (bounds.height - bH) / 2;
+                
+                pinnedBounds.push({
+                    left: left - offW,
+                    right: left + bW + offW,
+                    top: top - offH,
+                    bottom: top + bH + offH
+                });
+            });
+            return pinnedBounds;
+        }
+
+        function checkCollision(newBounds, pinnedBounds) {
+            for (let pb of pinnedBounds) {
+                if (!(newBounds.right <= pb.left || 
+                      newBounds.left >= pb.right || 
+                      newBounds.bottom <= pb.top || 
+                      newBounds.top >= pb.bottom)) {
+                    return true; 
+                }
+            }
+            return false;
+        }
+
+        // --- 外部控制邏輯 ---
+        function togglePinSelected() {
+            if (!selectedBlockId) return;
+            const block = document.getElementById(selectedBlockId);
+            if (!block) return;
+            
+            const isPinned = block.dataset.pinned === "true";
+            block.dataset.pinned = !isPinned;
+            block.classList.toggle('pinned', !isPinned);
+            
+            const li = document.getElementById('li-' + selectedBlockId);
+            if (li) li.classList.toggle('pinned', !isPinned);
+            
+            updateExternalControls();
+        }
+
+        function toggleOpacitySelected() {
+            if (!selectedBlockId) return;
+            const block = document.getElementById(selectedBlockId);
+            if (!block) return;
+
+            const isTranslucent = block.dataset.translucent === "true";
+            block.dataset.translucent = !isTranslucent;
+            block.classList.toggle('translucent', !isTranslucent);
+
+            const li = document.getElementById('li-' + selectedBlockId);
+            if (li) li.classList.toggle('translucent', !isTranslucent);
+
+            updateExternalControls();
+        }
+
+        function rotateSelected(baseAngle) {
+            if (!selectedBlockId) return;
+            const block = document.getElementById(selectedBlockId);
+            if (!block || block.dataset.pinned === "true") return;
+
+            const roomW = roomContainer.clientWidth;
+            const roomH = roomContainer.clientHeight;
+            const bW = parseFloat(block.style.width);
+            const bH = parseFloat(block.style.height);
+            const left = parseFloat(block.style.left);
+            const top = parseFloat(block.style.top);
+            const currentRot = parseFloat(block.dataset.rotation) % 360;
+            
+            let targetRot;
+            if (baseAngle === 0) {
+                 targetRot = Math.abs(currentRot) === 0 ? 180 : 0;
+            } else {
+                 targetRot = Math.abs(currentRot) === 90 ? 270 : 90;
+            }
+
+            const bounds = getRotatedBounds(bW, bH, targetRot);
+            const offW = (bounds.width - bW) / 2;
+            const offH = (bounds.height - bH) / 2;
+            
+            const newBounds = {
+                left: left - offW,
+                right: left + bW + offW,
+                top: top - offH,
+                bottom: top + bH + offH
+            };
+
+            if (newBounds.left < 0 || newBounds.right > roomW || newBounds.top < 0 || newBounds.bottom > roomH) {
+                alert("空間不足，無法旋轉！");
+                return;
+            }
+
+            const pinnedBounds = getPinnedBlocksBounds(selectedBlockId);
+            if (checkCollision(newBounds, pinnedBounds)) {
+                alert("會與固定家具重疊，無法旋轉！");
+                return;
+            }
+                
+            block.style.transition = 'transform 0.2s ease-out';
+            block.dataset.rotation = targetRot;
+            block.style.transform = `rotate(${targetRot}deg)`;
         }
 
         function makeDraggableAndRotatable(block, handle, blockId) {
@@ -368,11 +601,13 @@
                     block.remove(); 
                     document.getElementById('li-' + blockId).remove();
                     updateZIndices();
+                    clearSelection();
                     return; 
                 }
                 
-                selectBlock(blockId); // 點擊選取
-                if (e.target === handle) return;
+                selectBlock(blockId);
+                
+                if (e.target === handle || block.dataset.pinned === "true") return;
                 
                 isDragging = true;
                 const loc = getLoc(e);
@@ -384,6 +619,7 @@
 
             handle.addEventListener('mousedown', (e) => {
                 e.stopPropagation();
+                if (block.dataset.pinned === "true") return;
                 isRotating = true;
                 const loc = getLoc(e);
                 const rect = block.getBoundingClientRect();
@@ -396,6 +632,8 @@
 
             handle.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
+                if (block.dataset.pinned === "true") return;
+                
                 const roomW = roomContainer.clientWidth;
                 const roomH = roomContainer.clientHeight;
                 const bW = parseFloat(block.style.width);
@@ -407,15 +645,28 @@
                 const targetRot = (currentRot > 89 && currentRot < 91) ? 0 : 90;
 
                 const bounds = getRotatedBounds(bW, bH, targetRot);
-                if (left - (bounds.width - bW) / 2 >= 0 && left + bW + (bounds.width - bW) / 2 <= roomW &&
-                    top - (bounds.height - bH) / 2 >= 0 && top + bH + (bounds.height - bH) / 2 <= roomH) {
-                    
-                    block.style.transition = 'transform 0.2s ease-out';
-                    block.dataset.rotation = targetRot;
-                    block.style.transform = `rotate(${targetRot}deg)`;
-                } else {
-                    alert("空間不足，無法旋轉！");
+                const offW = (bounds.width - bW) / 2;
+                const offH = (bounds.height - bH) / 2;
+                
+                const newBounds = {
+                    left: left - offW, right: left + bW + offW,
+                    top: top - offH, bottom: top + bH + offH
+                };
+
+                if (newBounds.left < 0 || newBounds.right > roomW || newBounds.top < 0 || newBounds.bottom > roomH) {
+                     alert("空間不足，無法旋轉！");
+                     return;
                 }
+
+                const pinnedBounds = getPinnedBlocksBounds(blockId);
+                if (checkCollision(newBounds, pinnedBounds)) {
+                     alert("會與固定家具重疊，無法旋轉！");
+                     return;
+                }
+
+                block.style.transition = 'transform 0.2s ease-out';
+                block.dataset.rotation = targetRot;
+                block.style.transform = `rotate(${targetRot}deg)`;
             });
 
             document.addEventListener('mousemove', (e) => {
@@ -427,12 +678,25 @@
                 const bH = parseFloat(block.style.height);
 
                 if (isDragging) {
+                    const rot = parseFloat(block.dataset.rotation);
                     let newLeft = initialLeft + (loc.x - startX);
                     let newTop = initialTop + (loc.y - startY);
-                    const bounds = getRotatedBounds(bW, bH, parseFloat(block.dataset.rotation));
-                    const offW = (bounds.width - bW) / 2, offH = (bounds.height - bH) / 2;
+                    
+                    const bounds = getRotatedBounds(bW, bH, rot);
+                    const offW = (bounds.width - bW) / 2;
+                    const offH = (bounds.height - bH) / 2;
+                    
                     newLeft = Math.max(offW, Math.min(newLeft, roomW - bW - offW));
                     newTop = Math.max(offH, Math.min(newTop, roomH - bH - offH));
+
+                    const pinnedBounds = getPinnedBlocksBounds(blockId);
+                    const proposedBounds = {
+                        left: newLeft - offW, right: newLeft + bW + offW,
+                        top: newTop - offH, bottom: newTop + bH + offH
+                    };
+
+                    if (checkCollision(proposedBounds, pinnedBounds)) return;
+
                     block.style.left = newLeft + 'px';
                     block.style.top = newTop + 'px';
                 }
@@ -441,11 +705,22 @@
                     const angleDiff = (Math.atan2(loc.y - centerY, loc.x - centerX) - startAngle) * (180 / Math.PI);
                     const newRot = initialRotation + angleDiff;
                     const bounds = getRotatedBounds(bW, bH, newRot);
-                    const left = parseFloat(block.style.left), top = parseFloat(block.style.top);
-                    if (left - (bounds.width - bW) / 2 >= 0 && left + bW + (bounds.width - bW) / 2 <= roomW &&
-                        top - (bounds.height - bH) / 2 >= 0 && top + bH + (bounds.height - bH) / 2 <= roomH) {
-                        block.dataset.rotation = newRot;
-                        block.style.transform = `rotate(${newRot}deg)`;
+                    const offW = (bounds.width - bW) / 2;
+                    const offH = (bounds.height - bH) / 2;
+                    const left = parseFloat(block.style.left);
+                    const top = parseFloat(block.style.top);
+                    
+                    const newBounds = {
+                        left: left - offW, right: left + bW + offW,
+                        top: top - offH, bottom: top + bH + offH
+                    };
+
+                    if (newBounds.left >= 0 && newBounds.right <= roomW && newBounds.top >= 0 && newBounds.bottom <= roomH) {
+                        const pinnedBounds = getPinnedBlocksBounds(blockId);
+                        if (!checkCollision(newBounds, pinnedBounds)) {
+                            block.dataset.rotation = newRot;
+                            block.style.transform = `rotate(${newRot}deg)`;
+                        }
                     }
                 }
             });
