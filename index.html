@@ -3,354 +3,460 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>互動式房間規劃器</title>
+    <title>互動式房間規劃器 Pro</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
+            align-items: flex-start;
             margin: 20px;
+            background-color: #f0f2f5;
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
-        #controls {
-            margin-bottom: 20px;
+        .panel {
             padding: 15px;
             border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        #controls input {
-            margin-right: 10px;
-            margin-bottom: 5px;
-            width: 60px;
+        #controls { width: 320px; }
+        #list-panel { width: 250px; min-height: 400px; }
+
+        h3 { margin-top: 0; color: #333; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
+
+        input[type="number"], input[type="text"] {
+            margin-right: 5px; margin-bottom: 5px; width: 70px; padding: 4px;
         }
+
+        .input-group { margin-bottom: 8px; display: flex; align-items: center; }
+        label { width: 85px; font-size: 14px; }
+
+        button {
+            cursor: pointer; padding: 8px 12px; background-color: #2196F3;
+            color: white; border: none; border-radius: 4px; transition: 0.2s;
+            font-size: 14px; font-weight: bold;
+        }
+        button:hover { background-color: #1976D2; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 
         #room-container {
-            position: relative;
-            border: 2px solid #333;
-            background-color: #e0e0e0;
-            width: 350px;
-            height: 400px;
-            overflow: hidden;
-            touch-action: none;
+            position: relative; border: 3px solid #444; background-color: #fff;
+            background-image: radial-gradient(#ddd 1px, transparent 1px);
+            background-size: 20px 20px; width: 350px; height: 400px;
+            overflow: hidden; touch-action: none; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
         .furniture-block {
-            position: absolute;
-            background-color: #4CAF50;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: move;
-            user-select: none;
-            -webkit-user-select: none;
-            border: 1px solid #388E3C;
-            border-radius: 4px;
-            transform-origin: center center;
-            transition: transform 0.1s ease-out; /* 讓回歸水平時有平滑動畫 */
+            position: absolute; background-color: #4CAF50; color: white;
+            display: flex; justify-content: center; align-items: center;
+            cursor: move; user-select: none; -webkit-user-select: none;
+            border: 2px solid #2e7d32; border-radius: 4px;
+            transform-origin: center center; box-sizing: border-box;
+            transition: outline 0.1s;
         }
 
-        .furniture-block:active {
-            opacity: 0.8;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        /* 選取狀態的高亮與顯示旋轉鈕 */
+        .furniture-block.selected { outline: 3px dashed #ff9800; outline-offset: 2px; }
+        .furniture-block .rotate-handle { opacity: 0; pointer-events: none; transition: 0.2s; }
+        .furniture-block.selected .rotate-handle { opacity: 1; pointer-events: auto; }
+
+        .furniture-block .label-name {
+            pointer-events: none; font-size: 13px; font-weight: bold; text-align: center; z-index: 2;
         }
 
-        /* 刪除模式下的家具樣式 */
-        .furniture-block.delete-mode-active {
-            cursor: pointer;
-            background-color: #f44336; /* 變成紅色提示可刪除 */
-            border-color: #d32f2f;
+        .edge-label {
+            position: absolute; font-size: 9px; background-color: rgba(0, 0, 0, 0.3);
+            padding: 1px 3px; border-radius: 3px; pointer-events: none;
         }
-        
-        .furniture-block.delete-mode-active .rotate-handle {
-            display: none; /* 刪除模式下隱藏旋轉把手 */
-        }
+        .edge-top    { top: 2px; left: 50%; transform: translateX(-50%); }
+        .edge-bottom { bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .edge-left   { left: 2px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
+        .edge-right  { right: 2px; top: 50%; transform: translateY(-50%) rotate(90deg); }
 
         .rotate-handle {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 20px;
-            height: 20px;
-            background-color: #ff9800;
-            border-radius: 50%;
-            cursor: grab;
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            width: 18px; height: 18px; background-color: #ff9800; border: 2px solid white;
+            border-radius: 50%; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 5;
         }
-         .rotate-handle:active {
-             cursor: grabbing;
-         }
 
-         .input-group {
-             margin-bottom: 10px;
-         }
-         label {
-             display: inline-block;
-             width: 80px;
-         }
+        #toggle-delete-btn { width: 100%; margin-top: 10px; }
+        #toggle-delete-btn.active { background-color: #f44336; }
+        .furniture-block.delete-mode-active { background-color: #f44336 !important; border-color: #b71c1c !important; }
 
-         /* 刪除按鈕樣式 */
-         #toggle-delete-btn {
-             background-color: #ddd;
-             color: #333;
-             border: 1px solid #aaa;
-             padding: 5px 10px;
-             border-radius: 4px;
-             cursor: pointer;
-             margin-top: 10px;
-             width: 100%;
-         }
-         #toggle-delete-btn.active {
-             background-color: #f44336;
-             color: white;
-             border-color: #d32f2f;
-         }
-
+        /* 清單樣式 */
+        #furniture-list { list-style-type: none; padding: 0; margin: 0; }
+        .list-item {
+            padding: 10px; margin-bottom: 8px; background-color: #fafafa;
+            border: 1px solid #ddd; border-radius: 4px; cursor: grab;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 14px; font-weight: bold; transition: background-color 0.2s;
+        }
+        .list-item:active { cursor: grabbing; }
+        .list-item.dragging { opacity: 0.5; border: 2px dashed #2196F3; }
+        .list-item.selected { background-color: #e3f2fd; border-color: #2196F3; }
+        
+        .drag-indicator { font-size: 16px; color: #999; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <h1>互動式房間規劃器</h1>
-
-    <div id="controls">
-        <h3>房間設定</h3>
+    <div id="controls" class="panel">
+        <h1>房間規劃器 Pro</h1>
+        <h3>房間尺寸</h3>
         <div class="input-group">
-            <label>寬度 (px):</label> <input type="number" id="room-width" value="350" min="200" step="50">
+            <label>寬/高 (px):</label> 
+            <input type="number" id="room-width" value="350">
+            <input type="number" id="room-height" value="400">
+            <button onclick="updateRoomSize()">更新</button>
         </div>
-        <div class="input-group">
-            <label>高度 (px):</label> <input type="number" id="room-height" value="400" min="200" step="50">
-        </div>
-        <button onclick="updateRoomSize()">更新房間大小</button>
 
         <hr>
 
-        <h3>新增家具方塊</h3>
+        <h3>新增家具</h3>
         <div class="input-group">
-            <label>寬度 (px):</label> <input type="number" id="block-width" value="80" min="20" step="10">
+            <label>名稱:</label> <input type="text" id="block-label" value="床" style="width: 155px;">
         </div>
         <div class="input-group">
-            <label>高度 (px):</label> <input type="number" id="block-height" value="50" min="20" step="10">
+            <label>寬/高 (px):</label> 
+            <input type="number" id="block-width" value="100">
+            <input type="number" id="block-height" value="60">
         </div>
-        <div class="input-group">
-            <label>標籤名稱:</label> <input type="text" id="block-label" value="桌子" style="width: 100px;">
-        </div>
-        <button onclick="addBlock()">新增家具</button>
+        <button onclick="addBlock()" style="width: 100%; background-color: #4CAF50;">新增到房間</button>
 
-        <hr>
         <button id="toggle-delete-btn" onclick="toggleDeleteMode()">開啟刪除模式</button>
-        <p style="font-size: 0.8em; color: #666; margin-top: 5px; text-align: center;">提示：對著橘色圓點連點兩下可將家具拉平</p>
+
+        <hr>
+
+        <h3>檔案操作</h3>
+        <div class="btn-group">
+            <button onclick="downloadJSON()" style="flex: 1; background-color: #E91E63;">匯出檔案</button>
+            <button onclick="triggerFilePicker()" style="flex: 1; background-color: #009688;">匯入檔案</button>
+        </div>
+        <input type="file" id="file-input" style="display: none;" accept=".json" onchange="importJSON(event)">
     </div>
 
-    <div id="room-container">
-        </div>
+    <div id="room-container"></div>
+
+    <div id="list-panel" class="panel">
+        <h3 style="font-size: 16px; margin-bottom: 10px;">家具圖層清單</h3>
+        <p style="font-size: 12px; color: #666; margin-top: 0;">越上方顯示在越上層 (可拖曳排序)</p>
+        <ul id="furniture-list"></ul>
+    </div>
 
     <script>
         const roomContainer = document.getElementById('room-container');
-        let blockCounter = 0;
-        let isDeleteMode = false; // 追蹤是否處於刪除模式
+        const listContainer = document.getElementById('furniture-list');
+        let isDeleteMode = false;
+        let blockCounter = 0; // 用於產生唯一 ID
 
-        // --- 切換刪除模式 ---
+        // 取消選取 (點擊畫布空白處)
+        roomContainer.addEventListener('mousedown', (e) => {
+            if (e.target === roomContainer) clearSelection();
+        });
+
+        function selectBlock(id) {
+            if (isDeleteMode) return;
+            clearSelection();
+            const block = document.getElementById(id);
+            const li = document.getElementById('li-' + id);
+            if (block) block.classList.add('selected');
+            if (li) li.classList.add('selected');
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.furniture-block').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.list-item').forEach(li => li.classList.remove('selected'));
+        }
+
         function toggleDeleteMode() {
             isDeleteMode = !isDeleteMode;
             const btn = document.getElementById('toggle-delete-btn');
-            const blocks = document.querySelectorAll('.furniture-block');
-
-            if (isDeleteMode) {
-                btn.textContent = '關閉刪除模式 (點擊家具刪除)';
-                btn.classList.add('active');
-                blocks.forEach(b => b.classList.add('delete-mode-active'));
-            } else {
-                btn.textContent = '開啟刪除模式';
-                btn.classList.remove('active');
-                blocks.forEach(b => b.classList.remove('delete-mode-active'));
-            }
+            btn.textContent = isDeleteMode ? '點擊家具刪除 (關閉模式)' : '開啟刪除模式';
+            btn.classList.toggle('active', isDeleteMode);
+            clearSelection();
+            document.querySelectorAll('.furniture-block').forEach(b => {
+                b.classList.toggle('delete-mode-active', isDeleteMode);
+            });
         }
 
-        // --- 房間大小 ---
         function updateRoomSize() {
-            const width = document.getElementById('room-width').value;
-            const height = document.getElementById('room-height').value;
-            roomContainer.style.width = width + 'px';
-            roomContainer.style.height = height + 'px';
+            roomContainer.style.width = document.getElementById('room-width').value + 'px';
+            roomContainer.style.height = document.getElementById('room-height').value + 'px';
         }
 
-        // --- 建立家具 ---
-        function addBlock() {
-            const width = document.getElementById('block-width').value;
-            const height = document.getElementById('block-height').value;
-            const label = document.getElementById('block-label').value;
-
+        function createFurniture(data) {
+            const blockId = 'block-' + (blockCounter++);
+            
+            // 建立畫布上的家具
             const block = document.createElement('div');
+            block.id = blockId;
             block.className = 'furniture-block';
-            block.id = 'block-' + blockCounter++;
-            block.style.width = width + 'px';
-            block.style.height = height + 'px';
-            block.style.top = '10px';
-            block.style.left = '10px';
-            block.innerHTML = `<span>${label}</span>`;
+            block.style.width = data.width;
+            block.style.height = data.height;
+            block.style.left = data.left;
+            block.style.top = data.top;
+            
+            const wNum = parseInt(data.width);
+            const hNum = parseInt(data.height);
 
-            // 如果目前是刪除模式，新增加的家具也要套用刪除樣式
-            if (isDeleteMode) {
-                block.classList.add('delete-mode-active');
-            }
+            block.innerHTML = `
+                <div class="edge-label edge-top">${wNum}</div>
+                <div class="edge-label edge-bottom">${wNum}</div>
+                <div class="edge-label edge-left">${hNum}</div>
+                <div class="edge-label edge-right">${hNum}</div>
+                <div class="label-name">${data.label}</div>
+            `;
+            
+            if (isDeleteMode) block.classList.add('delete-mode-active');
 
-            // 旋轉把手
             const handle = document.createElement('div');
             handle.className = 'rotate-handle';
             block.appendChild(handle);
 
-            block.dataset.rotation = 0;
-
+            block.dataset.rotation = data.rotation || 0;
+            block.style.transform = `rotate(${data.rotation || 0}deg)`;
+            
             roomContainer.appendChild(block);
+            makeDraggableAndRotatable(block, handle, blockId);
 
-            makeDraggableAndRotatable(block, handle);
+            // 建立側邊欄清單項目
+            addListItem(blockId, data.label);
+            updateZIndices();
+            selectBlock(blockId); // 建立後自動選取
         }
 
-        // --- 互動邏輯 ---
-        function makeDraggableAndRotatable(block, handle) {
-            let isDragging = false;
-            let isRotating = false;
-            let startX, startY, initialLeft, initialTop;
-            let centerX, centerY, startAngle;
+        function addBlock() {
+            const w = document.getElementById('block-width').value + 'px';
+            const h = document.getElementById('block-height').value + 'px';
+            const label = document.getElementById('block-label').value;
 
-            function getEventLocation(e) {
-                if (e.touches && e.touches.length > 0) {
-                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                }
-                return { x: e.clientX, y: e.clientY };
+            createFurniture({
+                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0
+            });
+        }
+
+        // --- 清單與圖層邏輯 ---
+        function addListItem(id, labelText) {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            li.id = 'li-' + id;
+            li.dataset.refId = id;
+            li.draggable = true;
+            li.innerHTML = `<span>${labelText}</span><span class="drag-indicator">≡</span>`;
+
+            // 點擊清單選取對應家具
+            li.addEventListener('mousedown', () => selectBlock(id));
+
+            // 拖曳事件
+            li.addEventListener('dragstart', () => li.classList.add('dragging'));
+            li.addEventListener('dragend', () => {
+                li.classList.remove('dragging');
+                updateZIndices(); // 拖曳結束後更新圖層
+            });
+
+            // 新家具預設加在清單最上方 (最上層)
+            listContainer.insertBefore(li, listContainer.firstChild);
+        }
+
+        // 處理清單的拖放排序
+        listContainer.addEventListener('dragover', e => {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(listContainer, e.clientY);
+            const draggable = document.querySelector('.dragging');
+            if (afterElement == null) {
+                listContainer.appendChild(draggable);
+            } else {
+                listContainer.insertBefore(draggable, afterElement);
             }
+        });
 
-            // 點擊事件：處理刪除邏輯
-            block.addEventListener('click', (e) => {
-                if (isDeleteMode) {
-                    // 如果點擊到的是旋轉把手，不要刪除
-                    if(e.target.classList.contains('rotate-handle')) return;
-                    block.remove();
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.list-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // 根據清單順序更新 Z-Index (越上面的越前面)
+        function updateZIndices() {
+            const items = document.querySelectorAll('.list-item');
+            let z = items.length + 10;
+            items.forEach(li => {
+                const block = document.getElementById(li.dataset.refId);
+                if (block) block.style.zIndex = z--;
+            });
+        }
+
+        // --- 檔案操作 ---
+        function downloadJSON() {
+            // 根據清單順序匯出，確保匯入時圖層順序正確
+            const items = document.querySelectorAll('.list-item');
+            const data = [];
+            items.forEach(li => {
+                const block = document.getElementById(li.dataset.refId);
+                if(block) {
+                    data.push({
+                        label: block.querySelector('.label-name').textContent,
+                        width: block.style.width,
+                        height: block.style.height,
+                        top: block.style.top,
+                        left: block.style.left,
+                        rotation: block.dataset.rotation
+                    });
                 }
             });
 
-            // 雙擊事件：處理回歸水平 (手機上的雙擊通常需要自己用 touch 事件模擬，但現代瀏覽器的 dblclick 事件支援度已不錯)
-            handle.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                block.dataset.rotation = 0; // 重置角度資料
-                block.style.transform = `rotate(0deg)`; // 套用 CSS 將其拉平
-            });
+            if (data.length === 0) return alert("房間內沒有家具！");
 
+            const blob = new Blob([JSON.stringify(data.reverse(), null, 2)], { type: "application/json" }); // reverse 是為了讓匯入時順序正確
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `my_room_${new Date().getTime()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
 
-            function dragStart(e) {
-                if (isDeleteMode) return; // 刪除模式下禁止拖曳
-                if (e.target.classList.contains('rotate-handle')) return;
+        function triggerFilePicker() { document.getElementById('file-input').click(); }
 
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    roomContainer.innerHTML = ''; 
+                    listContainer.innerHTML = '';
+                    data.forEach(item => createFurniture(item));
+                    alert('匯入成功！');
+                } catch (err) { alert('匯入失敗，請確認檔案格式正確。'); }
+                event.target.value = ''; 
+            };
+            reader.readAsText(file);
+        }
+
+        // --- 拖曳與旋轉互動 ---
+        function getRotatedBounds(w, h, angleDeg) {
+            const rad = angleDeg * Math.PI / 180;
+            const sin = Math.abs(Math.sin(rad));
+            const cos = Math.abs(Math.cos(rad));
+            return { width: w * cos + h * sin, height: w * sin + h * cos };
+        }
+
+        function makeDraggableAndRotatable(block, handle, blockId) {
+            let isDragging = false, isRotating = false;
+            let startX, startY, initialLeft, initialTop, centerX, centerY, startAngle, initialRotation;
+
+            const getLoc = (e) => e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+
+            block.addEventListener('mousedown', (e) => {
+                if (isDeleteMode) { 
+                    block.remove(); 
+                    document.getElementById('li-' + blockId).remove();
+                    updateZIndices();
+                    return; 
+                }
+                
+                selectBlock(blockId); // 點擊選取
+                if (e.target === handle) return;
+                
                 isDragging = true;
-                const loc = getEventLocation(e);
-                startX = loc.x;
-                startY = loc.y;
-                
-                const computedStyle = window.getComputedStyle(block);
-                initialLeft = parseInt(computedStyle.left, 10) || 0;
-                initialTop = parseInt(computedStyle.top, 10) || 0;
-                
-                block.style.zIndex = getHighestZIndex() + 1;
-                
-                // 拖曳時暫時移除 transition，避免跟不上滑鼠
-                block.style.transition = 'none'; 
-            }
+                const loc = getLoc(e);
+                startX = loc.x; startY = loc.y;
+                initialLeft = parseFloat(block.style.left);
+                initialTop = parseFloat(block.style.top);
+                block.style.transition = 'none';
+            });
 
-            function rotateStart(e) {
-                if (isDeleteMode) return; // 刪除模式下禁止旋轉
+            handle.addEventListener('mousedown', (e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 isRotating = true;
-
+                const loc = getLoc(e);
                 const rect = block.getBoundingClientRect();
                 centerX = rect.left + rect.width / 2;
                 centerY = rect.top + rect.height / 2;
-
-                const loc = getEventLocation(e);
                 startAngle = Math.atan2(loc.y - centerY, loc.x - centerX);
-                
-                block.dataset.startRotation = parseFloat(block.dataset.rotation) || 0;
-                
-                // 旋轉時暫時移除 transition
+                initialRotation = parseFloat(block.dataset.rotation);
                 block.style.transition = 'none';
-            }
+            });
 
-            block.addEventListener('mousedown', dragStart);
-            block.addEventListener('touchstart', dragStart, { passive: false });
+            handle.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const roomW = roomContainer.clientWidth;
+                const roomH = roomContainer.clientHeight;
+                const bW = parseFloat(block.style.width);
+                const bH = parseFloat(block.style.height);
+                const left = parseFloat(block.style.left);
+                const top = parseFloat(block.style.top);
 
-            handle.addEventListener('mousedown', rotateStart);
-            handle.addEventListener('touchstart', rotateStart, { passive: false });
+                const currentRot = Math.abs(parseFloat(block.dataset.rotation) % 360);
+                const targetRot = (currentRot > 89 && currentRot < 91) ? 0 : 90;
 
-            function handleMove(e) {
-                if (!isDragging && !isRotating) return;
-                
-                if (e.cancelable) {
-                    e.preventDefault();
+                const bounds = getRotatedBounds(bW, bH, targetRot);
+                if (left - (bounds.width - bW) / 2 >= 0 && left + bW + (bounds.width - bW) / 2 <= roomW &&
+                    top - (bounds.height - bH) / 2 >= 0 && top + bH + (bounds.height - bH) / 2 <= roomH) {
+                    
+                    block.style.transition = 'transform 0.2s ease-out';
+                    block.dataset.rotation = targetRot;
+                    block.style.transform = `rotate(${targetRot}deg)`;
+                } else {
+                    alert("空間不足，無法旋轉！");
                 }
+            });
 
-                const loc = getEventLocation(e);
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging && !isRotating) return;
+                const loc = getLoc(e);
+                const roomW = roomContainer.clientWidth;
+                const roomH = roomContainer.clientHeight;
+                const bW = parseFloat(block.style.width);
+                const bH = parseFloat(block.style.height);
 
                 if (isDragging) {
-                    const dx = loc.x - startX;
-                    const dy = loc.y - startY;
-
-                    let newLeft = initialLeft + dx;
-                    let newTop = initialTop + dy;
-
-                    const roomRect = roomContainer.getBoundingClientRect();
-                    const blockRect = block.getBoundingClientRect();
-                    
-                     newLeft = Math.max(0, Math.min(newLeft, roomRect.width - blockRect.width));
-                     newTop = Math.max(0, Math.min(newTop, roomRect.height - blockRect.height));
-
+                    let newLeft = initialLeft + (loc.x - startX);
+                    let newTop = initialTop + (loc.y - startY);
+                    const bounds = getRotatedBounds(bW, bH, parseFloat(block.dataset.rotation));
+                    const offW = (bounds.width - bW) / 2, offH = (bounds.height - bH) / 2;
+                    newLeft = Math.max(offW, Math.min(newLeft, roomW - bW - offW));
+                    newTop = Math.max(offH, Math.min(newTop, roomH - bH - offH));
                     block.style.left = newLeft + 'px';
                     block.style.top = newTop + 'px';
                 }
 
                 if (isRotating) {
-                    const currentAngle = Math.atan2(loc.y - centerY, loc.x - centerX);
-                    let angleDiff = currentAngle - startAngle;
-                    angleDiff = angleDiff * (180 / Math.PI);
-
-                    let newRotation = parseFloat(block.dataset.startRotation) + angleDiff;
-                    block.dataset.rotation = newRotation;
-                    block.style.transform = `rotate(${newRotation}deg)`;
-                }
-            }
-
-            document.addEventListener('mousemove', handleMove);
-            document.addEventListener('touchmove', handleMove, { passive: false });
-
-            function handleEnd() {
-                if (isDragging || isRotating) {
-                    // 結束互動時，把 transition 加回來，讓回歸水平有動畫效果
-                    block.style.transition = 'transform 0.1s ease-out';
-                }
-                isDragging = false;
-                isRotating = false;
-            }
-
-            document.addEventListener('mouseup', handleEnd);
-            document.addEventListener('touchend', handleEnd);
-            document.addEventListener('mouseleave', handleEnd); 
-            document.addEventListener('touchcancel', handleEnd);
-        }
-
-        function getHighestZIndex() {
-            let maxZ = 0;
-            const blocks = document.querySelectorAll('.furniture-block');
-            blocks.forEach(b => {
-                const z = parseInt(window.getComputedStyle(b).zIndex, 10);
-                if (!isNaN(z) && z > maxZ) {
-                    maxZ = z;
+                    const angleDiff = (Math.atan2(loc.y - centerY, loc.x - centerX) - startAngle) * (180 / Math.PI);
+                    const newRot = initialRotation + angleDiff;
+                    const bounds = getRotatedBounds(bW, bH, newRot);
+                    const left = parseFloat(block.style.left), top = parseFloat(block.style.top);
+                    if (left - (bounds.width - bW) / 2 >= 0 && left + bW + (bounds.width - bW) / 2 <= roomW &&
+                        top - (bounds.height - bH) / 2 >= 0 && top + bH + (bounds.height - bH) / 2 <= roomH) {
+                        block.dataset.rotation = newRot;
+                        block.style.transform = `rotate(${newRot}deg)`;
+                    }
                 }
             });
-            return maxZ;
-        }
 
+            const end = () => isDragging = isRotating = false;
+            document.addEventListener('mouseup', end);
+            block.addEventListener('touchstart', (e) => { if(!isDeleteMode) e.preventDefault(); block.dispatchEvent(new MouseEvent('mousedown', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+            handle.addEventListener('touchstart', (e) => { e.preventDefault(); handle.dispatchEvent(new MouseEvent('mousedown', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); }, {passive: false});
+            document.addEventListener('touchmove', (e) => { if(isDragging || isRotating) { e.preventDefault(); document.dispatchEvent(new MouseEvent('mousemove', {clientX: e.touches[0].clientX, clientY: e.touches[0].clientY})); } }, {passive: false});
+            document.addEventListener('touchend', end);
+        }
     </script>
 </body>
 </html>
