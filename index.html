@@ -152,6 +152,7 @@
             <button onclick="changeZoom(-0.1)" style="background-color: #607D8B;">- 縮小</button>
             <span id="zoom-level" style="font-weight: bold; font-size: 16px;">100%</span>
             <button onclick="changeZoom(0.1)" style="background-color: #607D8B;">+ 放大</button>
+            <button onclick="fitZoomToWidth()" style="background-color: #3F51B5;">剛好</button>
             <button onclick="resetZoom()" style="background-color: #9E9E9E;">重設</button>
         </div>
 
@@ -297,6 +298,19 @@
 
         function resetZoom() {
             currentScale = 1;
+            updateZoomDisplay();
+        }
+
+        function fitZoomToWidth() {
+            const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
+            const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+            if (roomW <= 0 || viewportWidth <= 0) return;
+
+            // 使用目前螢幕可視寬度做「剛好」縮放
+            currentScale = viewportWidth / roomW;
+            if (currentScale < 0.05) currentScale = 0.05;
+            if (currentScale > 3.0) currentScale = 3.0;
             updateZoomDisplay();
         }
 
