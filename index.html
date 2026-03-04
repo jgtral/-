@@ -314,6 +314,19 @@
             updateZoomDisplay();
         }
 
+        function fitZoomToWidth() {
+            const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
+            const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+            if (roomW <= 0 || viewportWidth <= 0) return;
+
+            // 使用目前螢幕可視寬度做「剛好」縮放
+            currentScale = viewportWidth / roomW;
+            if (currentScale < 0.05) currentScale = 0.05;
+            if (currentScale > 3.0) currentScale = 3.0;
+            updateZoomDisplay();
+        }
+
 
         function updateBlockTextReadability() {
             const labelBaseSize = 13;
