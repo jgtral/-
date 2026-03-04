@@ -213,10 +213,6 @@
                 <input type="number" id="edit-height" min="1" disabled>
                 <button id="apply-edit-btn" onclick="applySelectedEdits()" disabled>套用</button>
             </div>
-            <div class="input-group">
-                <label>顏色:</label>
-                <select id="edit-color" style="width: 155px;" disabled></select>
-            </div>
         </div>
     </div>
 
@@ -244,8 +240,6 @@
         const editWidthInput = document.getElementById('edit-width');
         const editHeightInput = document.getElementById('edit-height');
         const applyEditBtn = document.getElementById('apply-edit-btn');
-        const blockColorSelect = document.getElementById('block-color');
-        const editColorSelect = document.getElementById('edit-color');
         
         let isDeleteMode = false;
         let blockCounter = 0;
@@ -502,6 +496,19 @@
             updateZoomDisplay();
         }
 
+        function fitZoomToWidth() {
+            const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
+            const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+            if (roomW <= 0 || viewportWidth <= 0) return;
+
+            // 使用目前螢幕可視寬度做「剛好」縮放
+            currentScale = viewportWidth / roomW;
+            if (currentScale < 0.05) currentScale = 0.05;
+            if (currentScale > 3.0) currentScale = 3.0;
+            updateZoomDisplay();
+        }
+
 
         function updateBlockTextReadability() {
             const labelBaseSize = 13;
@@ -558,12 +565,10 @@
                 editWidthInput.disabled = isPinned;
                 editHeightInput.disabled = isPinned;
                 applyEditBtn.disabled = false;
-                editColorSelect.disabled = false;
 
                 editLabelInput.value = block.querySelector('.label-name').textContent;
                 editWidthInput.value = parseInt(block.style.width);
                 editHeightInput.value = parseInt(block.style.height);
-                editColorSelect.value = PALETTE_COLORS.includes(block.dataset.color) ? block.dataset.color : '#4CAF50';
 
             } else {
                 extRotHBtn.disabled = true;
@@ -580,12 +585,10 @@
                 editWidthInput.disabled = true;
                 editHeightInput.disabled = true;
                 applyEditBtn.disabled = true;
-                editColorSelect.disabled = true;
 
                 editLabelInput.value = '';
                 editWidthInput.value = '';
                 editHeightInput.value = '';
-                editColorSelect.value = '#4CAF50';
             }
         }
 
@@ -873,7 +876,6 @@
             const newLabel = editLabelInput.value.trim();
             const newWidth = parseInt(editWidthInput.value, 10);
             const newHeight = parseInt(editHeightInput.value, 10);
-            const newColor = editColorSelect.value;
 
             if (newLabel) {
                 const labelNode = block.querySelector('.label-name');
@@ -901,7 +903,6 @@
                 }
             }
 
-            applyBlockColor(block, newColor);
             updateBlockTextReadability();
             updateExternalControls();
         }
