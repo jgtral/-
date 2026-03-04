@@ -152,6 +152,7 @@
             <button onclick="changeZoom(-0.1)" style="background-color: #607D8B;">- 縮小</button>
             <span id="zoom-level" style="font-weight: bold; font-size: 16px;">100%</span>
             <button onclick="changeZoom(0.1)" style="background-color: #607D8B;">+ 放大</button>
+            <button onclick="fitZoomToWidth()" style="background-color: #3F51B5;">剛好</button>
             <button onclick="resetZoom()" style="background-color: #9E9E9E;">重設</button>
         </div>
 
@@ -198,6 +199,16 @@
                 <button id="ext-pin" onclick="togglePinSelected()" disabled>📌 固定</button>
                 <button id="ext-opacity" onclick="toggleOpacitySelected()" disabled>🌁 透明</button>
             </div>
+            <div class="input-group" style="margin-top: 10px;">
+                <label>名稱:</label>
+                <input type="text" id="edit-label" style="width: 155px;" disabled>
+            </div>
+            <div class="input-group">
+                <label>寬/高 (px):</label>
+                <input type="number" id="edit-width" min="1" disabled>
+                <input type="number" id="edit-height" min="1" disabled>
+                <button id="apply-edit-btn" onclick="applySelectedEdits()" disabled>套用</button>
+            </div>
         </div>
     </div>
 
@@ -221,6 +232,10 @@
         const extRotVBtn = document.getElementById('ext-rot-v');
         const extPinBtn = document.getElementById('ext-pin');
         const extOpacityBtn = document.getElementById('ext-opacity');
+        const editLabelInput = document.getElementById('edit-label');
+        const editWidthInput = document.getElementById('edit-width');
+        const editHeightInput = document.getElementById('edit-height');
+        const applyEditBtn = document.getElementById('apply-edit-btn');
         
         let isDeleteMode = false;
         let blockCounter = 0;
@@ -231,40 +246,174 @@
         function loadDefaultRoom() {
             const defaultData = [
               {
-                "label": "柱子", "width": "900px", "height": "940px", "top": "1960px", "left": "4240px", "rotation": "0", "pinned": true, "translucent": false
+                "label": "柱子",
+                "width": "900px",
+                "height": "940px",
+                "top": "1786.67px",
+                "left": "4062.72px",
+                "rotation": "0",
+                "pinned": true,
+                "translucent": false
               },
               {
-                "label": "橫梁", "width": "4240px", "height": "480px", "top": "2250px", "left": "0px", "rotation": "0", "pinned": false, "translucent": true
+                "label": "橫梁",
+                "width": "4240px",
+                "height": "480px",
+                "top": "2250px",
+                "left": "0px",
+                "rotation": "0",
+                "pinned": false,
+                "translucent": true
               },
               {
-                "label": "可開窗戶", "width": "750px", "height": "170px", "top": "2730px", "left": "3490px", "rotation": "0", "pinned": true, "translucent": true
+                "label": "可開窗戶",
+                "width": "750px",
+                "height": "170px",
+                "top": "2730px",
+                "left": "3306.82px",
+                "rotation": "0",
+                "pinned": true,
+                "translucent": true
               },
               {
-                "label": "封閉窗戶", "width": "650px", "height": "170px", "top": "2730px", "left": "2840px", "rotation": "0", "pinned": true, "translucent": true
+                "label": "封閉窗戶",
+                "width": "650px",
+                "height": "170px",
+                "top": "2730px",
+                "left": "2650.92px",
+                "rotation": "0",
+                "pinned": true,
+                "translucent": true
               },
               {
-                "label": "牆壁", "width": "2840px", "height": "170px", "top": "2730px", "left": "0px", "rotation": "0", "pinned": true, "translucent": false
+                "label": "封閉窗",
+                "width": "850px",
+                "height": "170px",
+                "top": "556.667px",
+                "left": "4623.34px",
+                "rotation": "90",
+                "pinned": true,
+                "translucent": true
               },
               {
-                "label": "封閉窗", "width": "850px", "height": "170px", "top": "730px", "left": "4630px", "rotation": "90", "pinned": true, "translucent": true
+                "label": "可開窗",
+                "width": "720px",
+                "height": "170px",
+                "top": "1341.67px",
+                "left": "4688.33px",
+                "rotation": "90",
+                "pinned": false,
+                "translucent": true
               },
               {
-                "label": "可開窗", "width": "720px", "height": "170px", "top": "1515px", "left": "4695px", "rotation": "90", "pinned": true, "translucent": true
+                "label": "門口",
+                "width": "865px",
+                "height": "865px",
+                "top": "0px",
+                "left": "0px",
+                "rotation": "0",
+                "pinned": false,
+                "translucent": true
               },
               {
-                "label": "牆壁", "width": "390px", "height": "170px", "top": "110px", "left": "4860px", "rotation": "90", "pinned": true, "translucent": false
+                "label": "雙人床",
+                "width": "1520px",
+                "height": "1880px",
+                "top": "0px",
+                "left": "1572.72px",
+                "rotation": "0",
+                "pinned": false,
+                "translucent": false
               },
               {
-                "label": "梁", "width": "1960px", "height": "455px", "top": "752.5px", "left": "3760px", "rotation": "90", "pinned": false, "translucent": true
+                "label": "牆壁",
+                "width": "220px",
+                "height": "170px",
+                "top": "25px",
+                "left": "4936.36px",
+                "rotation": "90",
+                "pinned": true,
+                "translucent": false
               },
               {
-                "label": "門口", "width": "865px", "height": "865px", "top": "0px", "left": "0px", "rotation": "0", "pinned": false, "translucent": true
+                "label": "牆壁",
+                "width": "1790px",
+                "height": "455px",
+                "top": "667.5px",
+                "left": "3837.28px",
+                "rotation": "90",
+                "pinned": false,
+                "translucent": true
               },
               {
-                "label": "雙人床", "width": "1520px", "height": "1880px", "top": "360px", "left": "1150px", "rotation": "0", "pinned": false, "translucent": false
+                "label": "雙人床+兩側",
+                "width": "3040px",
+                "height": "1880px",
+                "top": "0px",
+                "left": "1018.64px",
+                "rotation": "0",
+                "pinned": false,
+                "translucent": false
               },
               {
-                "label": "電視", "width": "1293px", "height": "269px", "top": "0px", "left": "1150px", "rotation": "0", "pinned": false, "translucent": false
+                "label": "書桌",
+                "width": "800px",
+                "height": "1650px",
+                "top": "0px",
+                "left": "4150.45px",
+                "rotation": "0",
+                "pinned": false,
+                "translucent": false
+              },
+              {
+                "label": "電視",
+                "width": "1293px",
+                "height": "269px",
+                "top": "512px",
+                "left": "4169.54px",
+                "rotation": "90",
+                "pinned": false,
+                "translucent": false
+              },
+              {
+                "label": "牆壁",
+                "width": "940px",
+                "height": "170px",
+                "top": "2170.91px",
+                "left": "4581.82px",
+                "rotation": "90",
+                "pinned": true,
+                "translucent": false
+              },
+              {
+                "label": "牆壁",
+                "width": "1070px",
+                "height": "170px",
+                "top": "2730px",
+                "left": "4061.82px",
+                "rotation": "0",
+                "pinned": true,
+                "translucent": false
+              },
+              {
+                "label": "牆壁",
+                "width": "2670px",
+                "height": "170px",
+                "top": "2730px",
+                "left": "0px",
+                "rotation": "0",
+                "pinned": true,
+                "translucent": false
+              },
+              {
+                "label": "衣櫃",
+                "width": "1690px",
+                "height": "800px",
+                "top": "1479.55px",
+                "left": "-445px",
+                "rotation": "270",
+                "pinned": false,
+                "translucent": false
               }
             ];
 
@@ -300,6 +449,35 @@
             updateZoomDisplay();
         }
 
+        function fitZoomToWidth() {
+            const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
+            const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+            if (roomW <= 0 || viewportWidth <= 0) return;
+
+            // 使用目前螢幕可視寬度做「剛好」縮放
+            currentScale = viewportWidth / roomW;
+            if (currentScale < 0.05) currentScale = 0.05;
+            if (currentScale > 3.0) currentScale = 3.0;
+            updateZoomDisplay();
+        }
+
+
+        function updateBlockTextReadability() {
+            const labelBaseSize = 13;
+            const edgeBaseSize = 9;
+            const scaleFactor = Math.min(1 / currentScale, 6);
+
+            roomContainer.querySelectorAll('.label-name').forEach((label) => {
+                label.style.fontSize = (labelBaseSize * scaleFactor) + 'px';
+            });
+
+            roomContainer.querySelectorAll('.edge-label').forEach((edgeLabel) => {
+                edgeLabel.style.fontSize = (edgeBaseSize * scaleFactor) + 'px';
+                edgeLabel.style.padding = (1 * scaleFactor) + 'px ' + (3 * scaleFactor) + 'px';
+            });
+        }
+
         function updateZoomDisplay() {
             document.getElementById('zoom-level').innerText = Math.round(currentScale * 100) + '%';
             roomContainer.style.transform = `scale(${currentScale})`;
@@ -308,6 +486,7 @@
             const roomH = document.getElementById('room-height').value;
             scaleWrapper.style.width = (roomW * currentScale) + 'px';
             scaleWrapper.style.height = (roomH * currentScale) + 'px';
+            updateBlockTextReadability();
         }
 
         updateZoomDisplay();
@@ -335,6 +514,15 @@
                 extOpacityBtn.innerHTML = isTranslucent ? '恢復' : '🌁 透明';
                 extOpacityBtn.style.backgroundColor = isTranslucent ? '#FF9800' : '#607D8B';
 
+                editLabelInput.disabled = false;
+                editWidthInput.disabled = isPinned;
+                editHeightInput.disabled = isPinned;
+                applyEditBtn.disabled = false;
+
+                editLabelInput.value = block.querySelector('.label-name').textContent;
+                editWidthInput.value = parseInt(block.style.width);
+                editHeightInput.value = parseInt(block.style.height);
+
             } else {
                 extRotHBtn.disabled = true;
                 extRotVBtn.disabled = true;
@@ -345,6 +533,15 @@
                 extPinBtn.style.backgroundColor = '';
                 extOpacityBtn.innerHTML = '🌁 透明';
                 extOpacityBtn.style.backgroundColor = '';
+
+                editLabelInput.disabled = true;
+                editWidthInput.disabled = true;
+                editHeightInput.disabled = true;
+                applyEditBtn.disabled = true;
+
+                editLabelInput.value = '';
+                editWidthInput.value = '';
+                editHeightInput.value = '';
             }
         }
 
@@ -427,6 +624,7 @@
             
             roomContainer.appendChild(block);
             makeDraggableAndRotatable(block, handle, blockId);
+            updateBlockTextReadability();
 
             addListItem(blockId, data.label, data.pinned, data.translucent);
             updateZIndices();
@@ -620,6 +818,45 @@
                 }
             }
             return false;
+        }
+
+        function applySelectedEdits() {
+            if (!selectedBlockId) return;
+            const block = document.getElementById(selectedBlockId);
+            if (!block) return;
+
+            const newLabel = editLabelInput.value.trim();
+            const newWidth = parseInt(editWidthInput.value, 10);
+            const newHeight = parseInt(editHeightInput.value, 10);
+
+            if (newLabel) {
+                const labelNode = block.querySelector('.label-name');
+                if (labelNode) labelNode.textContent = newLabel;
+
+                const liName = document.querySelector(`#li-${selectedBlockId} .item-name`);
+                if (liName) liName.textContent = newLabel;
+            }
+
+            if (block.dataset.pinned !== "true") {
+                if (Number.isFinite(newWidth) && newWidth > 0) {
+                    block.style.width = newWidth + 'px';
+                    const topLabel = block.querySelector('.edge-top');
+                    const bottomLabel = block.querySelector('.edge-bottom');
+                    if (topLabel) topLabel.textContent = newWidth;
+                    if (bottomLabel) bottomLabel.textContent = newWidth;
+                }
+
+                if (Number.isFinite(newHeight) && newHeight > 0) {
+                    block.style.height = newHeight + 'px';
+                    const leftLabel = block.querySelector('.edge-left');
+                    const rightLabel = block.querySelector('.edge-right');
+                    if (leftLabel) leftLabel.textContent = newHeight;
+                    if (rightLabel) rightLabel.textContent = newHeight;
+                }
+            }
+
+            updateBlockTextReadability();
+            updateExternalControls();
         }
 
         // --- 外部控制邏輯 ---
