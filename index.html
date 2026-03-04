@@ -178,30 +178,8 @@
             <input type="number" id="block-height" value="60">
         </div>
         <div class="input-group">
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-            <label>顏色(16):</label>
-            <select id="block-color" style="width: 155px;">
-                <option value="#4CAF50">#4CAF50</option>
-                <option value="#2196F3">#2196F3</option>
-                <option value="#3F51B5">#3F51B5</option>
-                <option value="#9C27B0">#9C27B0</option>
-                <option value="#E91E63">#E91E63</option>
-                <option value="#F44336">#F44336</option>
-                <option value="#FF5722">#FF5722</option>
-                <option value="#FF9800">#FF9800</option>
-                <option value="#FFC107">#FFC107</option>
-                <option value="#CDDC39">#CDDC39</option>
-                <option value="#8BC34A">#8BC34A</option>
-                <option value="#009688">#009688</option>
-                <option value="#00BCD4">#00BCD4</option>
-                <option value="#795548">#795548</option>
-                <option value="#607D8B">#607D8B</option>
-                <option value="#9E9E9E">#9E9E9E</option>
-            </select>
-=======
             <label>顏色:</label>
             <select id="block-color" style="width: 155px;"></select>
->>>>>>> main
         </div>
         <button onclick="addBlock()" style="width: 100%; background-color: #4CAF50;">新增到房間</button>
 
@@ -235,30 +213,6 @@
                 <input type="number" id="edit-height" min="1" disabled>
                 <button id="apply-edit-btn" onclick="applySelectedEdits()" disabled>套用</button>
             </div>
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-            <div class="input-group">
-                <label>顏色(16):</label>
-                <select id="edit-color" style="width: 155px;" disabled>
-                <option value="#4CAF50">#4CAF50</option>
-                <option value="#2196F3">#2196F3</option>
-                <option value="#3F51B5">#3F51B5</option>
-                <option value="#9C27B0">#9C27B0</option>
-                <option value="#E91E63">#E91E63</option>
-                <option value="#F44336">#F44336</option>
-                <option value="#FF5722">#FF5722</option>
-                <option value="#FF9800">#FF9800</option>
-                <option value="#FFC107">#FFC107</option>
-                <option value="#CDDC39">#CDDC39</option>
-                <option value="#8BC34A">#8BC34A</option>
-                <option value="#009688">#009688</option>
-                <option value="#00BCD4">#00BCD4</option>
-                <option value="#795548">#795548</option>
-                <option value="#607D8B">#607D8B</option>
-                <option value="#9E9E9E">#9E9E9E</option>
-            </select>
-            </div>
-=======
->>>>>>> main
         </div>
     </div>
 
@@ -286,11 +240,6 @@
         const editWidthInput = document.getElementById('edit-width');
         const editHeightInput = document.getElementById('edit-height');
         const applyEditBtn = document.getElementById('apply-edit-btn');
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-        const blockColorSelect = document.getElementById('block-color');
-        const editColorSelect = document.getElementById('edit-color');
-=======
->>>>>>> main
         
         let isDeleteMode = false;
         let blockCounter = 0;
@@ -328,7 +277,6 @@
         blockColorSelect.value = '#4CAF50';
 
         // --- 預設房間資料與載入邏輯 ---
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
         function loadDefaultRoom() {
             const defaultData = [
               {
@@ -501,180 +449,6 @@
                 "pinned": false,
                 "translucent": false
               }
-=======
-        function loadDefaultRoom() {
-            const defaultData = [
-              {
-                "label": "柱子",
-                "width": "900px",
-                "height": "940px",
-                "top": "1786.67px",
-                "left": "4062.72px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "橫梁",
-                "width": "4240px",
-                "height": "480px",
-                "top": "2250px",
-                "left": "0px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "可開窗戶",
-                "width": "750px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "3306.82px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": true
-              },
-              {
-                "label": "封閉窗戶",
-                "width": "650px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "2650.92px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": true
-              },
-              {
-                "label": "封閉窗",
-                "width": "850px",
-                "height": "170px",
-                "top": "556.667px",
-                "left": "4623.34px",
-                "rotation": "90",
-                "pinned": true,
-                "translucent": true
-              },
-              {
-                "label": "可開窗",
-                "width": "720px",
-                "height": "170px",
-                "top": "1341.67px",
-                "left": "4688.33px",
-                "rotation": "90",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "門口",
-                "width": "865px",
-                "height": "865px",
-                "top": "0px",
-                "left": "0px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "雙人床",
-                "width": "1520px",
-                "height": "1880px",
-                "top": "0px",
-                "left": "1572.72px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "220px",
-                "height": "170px",
-                "top": "25px",
-                "left": "4936.36px",
-                "rotation": "90",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "1790px",
-                "height": "455px",
-                "top": "667.5px",
-                "left": "3837.28px",
-                "rotation": "90",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "雙人床+兩側",
-                "width": "3040px",
-                "height": "1880px",
-                "top": "0px",
-                "left": "1018.64px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "書桌",
-                "width": "800px",
-                "height": "1650px",
-                "top": "0px",
-                "left": "4150.45px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "電視",
-                "width": "1293px",
-                "height": "269px",
-                "top": "512px",
-                "left": "4169.54px",
-                "rotation": "90",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "940px",
-                "height": "170px",
-                "top": "2170.91px",
-                "left": "4581.82px",
-                "rotation": "90",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "1070px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "4061.82px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "2670px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "0px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "衣櫃",
-                "width": "1690px",
-                "height": "800px",
-                "top": "1479.55px",
-                "left": "-445px",
-                "rotation": "270",
-                "pinned": false,
-                "translucent": false
-              }
->>>>>>> main
             ];
 
             // 自動擴充房間大小以容納預設格局 (約 5200x3000)
@@ -722,8 +496,6 @@
             updateZoomDisplay();
         }
 
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-=======
         function fitZoomToWidth() {
             const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
             const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
@@ -737,7 +509,6 @@
             updateZoomDisplay();
         }
 
->>>>>>> main
 
         function updateBlockTextReadability() {
             const labelBaseSize = 13;
@@ -794,18 +565,10 @@
                 editWidthInput.disabled = isPinned;
                 editHeightInput.disabled = isPinned;
                 applyEditBtn.disabled = false;
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-                editColorSelect.disabled = false;
-=======
->>>>>>> main
 
                 editLabelInput.value = block.querySelector('.label-name').textContent;
                 editWidthInput.value = parseInt(block.style.width);
                 editHeightInput.value = parseInt(block.style.height);
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-                editColorSelect.value = PALETTE_COLORS.includes(block.dataset.color) ? block.dataset.color : '#4CAF50';
-=======
->>>>>>> main
 
             } else {
                 extRotHBtn.disabled = true;
@@ -822,18 +585,10 @@
                 editWidthInput.disabled = true;
                 editHeightInput.disabled = true;
                 applyEditBtn.disabled = true;
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-                editColorSelect.disabled = true;
-=======
->>>>>>> main
 
                 editLabelInput.value = '';
                 editWidthInput.value = '';
                 editHeightInput.value = '';
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-                editColorSelect.value = '#4CAF50';
-=======
->>>>>>> main
             }
         }
 
@@ -1113,49 +868,6 @@
             return false;
         }
 
-<<<<<<< codex/add-button-to-fit-screen-width-4s50ro
-        function applySelectedEdits() {
-            if (!selectedBlockId) return;
-            const block = document.getElementById(selectedBlockId);
-            if (!block) return;
-
-            const newLabel = editLabelInput.value.trim();
-            const newWidth = parseInt(editWidthInput.value, 10);
-            const newHeight = parseInt(editHeightInput.value, 10);
-            const newColor = editColorSelect.value;
-
-            if (newLabel) {
-                const labelNode = block.querySelector('.label-name');
-                if (labelNode) labelNode.textContent = newLabel;
-
-                const liName = document.querySelector(`#li-${selectedBlockId} .item-name`);
-                if (liName) liName.textContent = newLabel;
-            }
-
-            if (block.dataset.pinned !== "true") {
-                if (Number.isFinite(newWidth) && newWidth > 0) {
-                    block.style.width = newWidth + 'px';
-                    const topLabel = block.querySelector('.edge-top');
-                    const bottomLabel = block.querySelector('.edge-bottom');
-                    if (topLabel) topLabel.textContent = newWidth;
-                    if (bottomLabel) bottomLabel.textContent = newWidth;
-                }
-
-                if (Number.isFinite(newHeight) && newHeight > 0) {
-                    block.style.height = newHeight + 'px';
-                    const leftLabel = block.querySelector('.edge-left');
-                    const rightLabel = block.querySelector('.edge-right');
-                    if (leftLabel) leftLabel.textContent = newHeight;
-                    if (rightLabel) rightLabel.textContent = newHeight;
-                }
-            }
-
-            applyBlockColor(block, newColor);
-            updateBlockTextReadability();
-            updateExternalControls();
-        }
-
-=======
         function applySelectedEdits() {
             if (!selectedBlockId) return;
             const block = document.getElementById(selectedBlockId);
@@ -1195,7 +907,6 @@
             updateExternalControls();
         }
 
->>>>>>> main
         // --- 外部控制邏輯 ---
         function togglePinSelected() {
             if (!selectedBlockId) return;
