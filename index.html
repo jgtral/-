@@ -314,6 +314,35 @@
             updateZoomDisplay();
         }
 
+        function fitZoomToWidth() {
+            const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
+            const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+
+            if (roomW <= 0 || viewportWidth <= 0) return;
+
+            // 使用目前螢幕可視寬度做「剛好」縮放
+            currentScale = viewportWidth / roomW;
+            if (currentScale < 0.05) currentScale = 0.05;
+            if (currentScale > 3.0) currentScale = 3.0;
+            updateZoomDisplay();
+        }
+
+
+        function updateBlockTextReadability() {
+            const labelBaseSize = 13;
+            const edgeBaseSize = 9;
+            const scaleFactor = Math.min(1 / currentScale, 6);
+
+            roomContainer.querySelectorAll('.label-name').forEach((label) => {
+                label.style.fontSize = (labelBaseSize * scaleFactor) + 'px';
+            });
+
+            roomContainer.querySelectorAll('.edge-label').forEach((edgeLabel) => {
+                edgeLabel.style.fontSize = (edgeBaseSize * scaleFactor) + 'px';
+                edgeLabel.style.padding = (1 * scaleFactor) + 'px ' + (3 * scaleFactor) + 'px';
+            });
+        }
+
         function updateZoomDisplay() {
             document.getElementById('zoom-level').innerText = Math.round(currentScale * 100) + '%';
             roomContainer.style.transform = `scale(${currentScale})`;
@@ -322,6 +351,7 @@
             const roomH = document.getElementById('room-height').value;
             scaleWrapper.style.width = (roomW * currentScale) + 'px';
             scaleWrapper.style.height = (roomH * currentScale) + 'px';
+            updateBlockTextReadability();
         }
 
         updateZoomDisplay();
@@ -441,6 +471,7 @@
             
             roomContainer.appendChild(block);
             makeDraggableAndRotatable(block, handle, blockId);
+            updateBlockTextReadability();
 
             addListItem(blockId, data.label, data.pinned, data.translucent);
             updateZIndices();
