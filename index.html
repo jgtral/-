@@ -24,8 +24,8 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        #controls { width: 320px; }
-        #list-panel { width: 300px; min-height: 400px; } /* Slightly wider for new buttons */
+        #controls { width: 320px; flex-shrink: 0; }
+        #list-panel { width: 300px; min-height: 400px; flex-shrink: 0; }
 
         h3 { margin-top: 0; color: #333; }
         hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
@@ -45,11 +45,30 @@
         button:hover { background-color: #1976D2; }
         .btn-group { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 
+        #room-wrapper {
+            flex: 1;
+            min-width: 400px;
+            max-width: 800px;
+            height: 80vh;
+            min-height: 500px;
+            overflow: auto;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: #e0e0e0;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        #scale-wrapper {
+            transform-origin: top left;
+        }
+
         #room-container {
             position: relative; border: 3px solid #444; background-color: #fff;
             background-image: radial-gradient(#ddd 1px, transparent 1px);
             background-size: 20px 20px; width: 350px; height: 400px;
             overflow: hidden; touch-action: none; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform-origin: top left;
         }
 
         .furniture-block {
@@ -58,20 +77,16 @@
             cursor: move; user-select: none; -webkit-user-select: none;
             border: 2px solid #2e7d32; border-radius: 4px;
             transform-origin: center center; box-sizing: border-box;
-            transition: outline 0.1s, opacity 0.2s; /* Added opacity transition */
+            transition: outline 0.1s, opacity 0.2s;
         }
 
-        /* 固定狀態的樣式 */
         .furniture-block.pinned {
             border: 2px solid #555;
             background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px);
             cursor: not-allowed;
         }
         
-        /* 透明狀態 */
         .furniture-block.translucent { opacity: 0.5; }
-
-        /* 選取狀態的高亮與顯示旋轉鈕 */
         .furniture-block.selected { outline: 3px dashed #ff9800; outline-offset: 2px; }
         .furniture-block .rotate-handle { opacity: 0; pointer-events: none; transition: 0.2s; }
         .furniture-block.selected .rotate-handle { opacity: 1; pointer-events: auto; }
@@ -99,7 +114,6 @@
         #toggle-delete-btn.active { background-color: #f44336; }
         .furniture-block.delete-mode-active { background-color: #f44336 !important; border-color: #b71c1c !important; }
 
-        /* 清單樣式 */
         #furniture-list { list-style-type: none; padding: 0; margin: 0; }
         .list-item {
             padding: 10px; margin-bottom: 8px; background-color: #fafafa;
@@ -111,20 +125,16 @@
         .list-item.dragging { opacity: 0.5; border: 2px dashed #2196F3; }
         .list-item.selected { background-color: #e3f2fd; border-color: #2196F3; }
         .list-item.pinned span.item-name { text-decoration: underline; color: #555; }
-        .list-item.translucent span.item-name { opacity: 0.5; } /* Visual cue in list */
+        .list-item.translucent span.item-name { opacity: 0.5; }
         
         .list-controls { display: flex; align-items: center; gap: 5px; }
         .layer-btn { padding: 2px 5px; font-size: 10px; background-color: #e0e0e0; color: #333; border: 1px solid #ccc; }
         .layer-btn:hover { background-color: #d0d0d0; }
         .drag-indicator { font-size: 16px; color: #999; margin-left: 5px; pointer-events: none; }
 
-        /* 外部控制按鈕樣式 */
         #external-controls {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 6px;
-            border: 1px solid #ddd;
+            margin-top: 15px; padding: 10px; background-color: #f9f9f9;
+            border-radius: 6px; border: 1px solid #ddd;
         }
         #external-controls h4 { margin: 0 0 10px 0; font-size: 14px; color: #555; }
         .ext-btn-group { display: flex; gap: 5px; flex-wrap: wrap;}
@@ -136,6 +146,17 @@
 
     <div id="controls" class="panel">
         <h1>房間規劃器 Pro</h1>
+        
+        <h3>檢視縮放</h3>
+        <div class="input-group" style="justify-content: space-between;">
+            <button onclick="changeZoom(-0.1)" style="background-color: #607D8B;">- 縮小</button>
+            <span id="zoom-level" style="font-weight: bold; font-size: 16px;">100%</span>
+            <button onclick="changeZoom(0.1)" style="background-color: #607D8B;">+ 放大</button>
+            <button onclick="resetZoom()" style="background-color: #9E9E9E;">重設</button>
+        </div>
+
+        <hr>
+
         <h3>房間尺寸</h3>
         <div class="input-group">
             <label>寬/高 (px):</label> 
@@ -161,11 +182,12 @@
 
         <hr>
 
-        <h3>檔案操作</h3>
+        <h3>檔案與預設操作</h3>
         <div class="btn-group">
             <button onclick="downloadJSON()" style="flex: 1; background-color: #E91E63;">匯出檔案</button>
             <button onclick="triggerFilePicker()" style="flex: 1; background-color: #009688;">匯入檔案</button>
         </div>
+        <button onclick="loadDefaultRoom()" style="width: 100%; margin-top: 10px; background-color: #673AB7;">載入預設房間</button>
         <input type="file" id="file-input" style="display: none;" accept=".json" onchange="importJSON(event)">
 
         <div id="external-controls">
@@ -179,7 +201,11 @@
         </div>
     </div>
 
-    <div id="room-container"></div>
+    <div id="room-wrapper">
+        <div id="scale-wrapper">
+            <div id="room-container"></div>
+        </div>
+    </div>
 
     <div id="list-panel" class="panel">
         <h3 style="font-size: 16px; margin-bottom: 10px;">家具圖層清單</h3>
@@ -189,6 +215,7 @@
 
     <script>
         const roomContainer = document.getElementById('room-container');
+        const scaleWrapper = document.getElementById('scale-wrapper');
         const listContainer = document.getElementById('furniture-list');
         const extRotHBtn = document.getElementById('ext-rot-h');
         const extRotVBtn = document.getElementById('ext-rot-v');
@@ -198,6 +225,92 @@
         let isDeleteMode = false;
         let blockCounter = 0;
         let selectedBlockId = null;
+        let currentScale = 1;
+
+        // --- 預設房間資料與載入邏輯 ---
+        function loadDefaultRoom() {
+            const defaultData = [
+              {
+                "label": "柱子", "width": "900px", "height": "940px", "top": "1960px", "left": "4240px", "rotation": "0", "pinned": true, "translucent": false
+              },
+              {
+                "label": "橫梁", "width": "4240px", "height": "480px", "top": "2250px", "left": "0px", "rotation": "0", "pinned": false, "translucent": true
+              },
+              {
+                "label": "可開窗戶", "width": "750px", "height": "170px", "top": "2730px", "left": "3490px", "rotation": "0", "pinned": true, "translucent": true
+              },
+              {
+                "label": "封閉窗戶", "width": "650px", "height": "170px", "top": "2730px", "left": "2840px", "rotation": "0", "pinned": true, "translucent": true
+              },
+              {
+                "label": "牆壁", "width": "2840px", "height": "170px", "top": "2730px", "left": "0px", "rotation": "0", "pinned": true, "translucent": false
+              },
+              {
+                "label": "封閉窗", "width": "850px", "height": "170px", "top": "730px", "left": "4630px", "rotation": "90", "pinned": true, "translucent": true
+              },
+              {
+                "label": "可開窗", "width": "720px", "height": "170px", "top": "1515px", "left": "4695px", "rotation": "90", "pinned": true, "translucent": true
+              },
+              {
+                "label": "牆壁", "width": "390px", "height": "170px", "top": "110px", "left": "4860px", "rotation": "90", "pinned": true, "translucent": false
+              },
+              {
+                "label": "梁", "width": "1960px", "height": "455px", "top": "752.5px", "left": "3760px", "rotation": "90", "pinned": false, "translucent": true
+              },
+              {
+                "label": "門口", "width": "865px", "height": "865px", "top": "0px", "left": "0px", "rotation": "0", "pinned": false, "translucent": true
+              },
+              {
+                "label": "雙人床", "width": "1520px", "height": "1880px", "top": "360px", "left": "1150px", "rotation": "0", "pinned": false, "translucent": false
+              },
+              {
+                "label": "電視", "width": "1293px", "height": "269px", "top": "0px", "left": "1150px", "rotation": "0", "pinned": false, "translucent": false
+              }
+            ];
+
+            // 自動擴充房間大小以容納預設格局 (約 5200x3000)
+            document.getElementById('room-width').value = 5200;
+            document.getElementById('room-height').value = 3000;
+            updateRoomSize();
+
+            // 自動縮小檢視比例至 15%，方便一覽全貌
+            currentScale = 0.15;
+            updateZoomDisplay();
+
+            // 清空目前內容
+            roomContainer.innerHTML = ''; 
+            listContainer.innerHTML = '';
+            clearSelection();
+
+            // 匯入資料
+            defaultData.forEach(item => createFurniture(item));
+        }
+
+        // --- 縮放控制邏輯 ---
+        function changeZoom(delta) {
+            currentScale += delta;
+            // 由於 5000 像素非常大，最小縮放可以到 0.05 (5%)
+            if (currentScale < 0.05) currentScale = 0.05;
+            if (currentScale > 3.0) currentScale = 3.0;
+            updateZoomDisplay();
+        }
+
+        function resetZoom() {
+            currentScale = 1;
+            updateZoomDisplay();
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoom-level').innerText = Math.round(currentScale * 100) + '%';
+            roomContainer.style.transform = `scale(${currentScale})`;
+            
+            const roomW = document.getElementById('room-width').value;
+            const roomH = document.getElementById('room-height').value;
+            scaleWrapper.style.width = (roomW * currentScale) + 'px';
+            scaleWrapper.style.height = (roomH * currentScale) + 'px';
+        }
+
+        updateZoomDisplay();
 
         roomContainer.addEventListener('mousedown', (e) => {
             if (e.target === roomContainer) clearSelection();
@@ -267,6 +380,7 @@
         function updateRoomSize() {
             roomContainer.style.width = document.getElementById('room-width').value + 'px';
             roomContainer.style.height = document.getElementById('room-height').value + 'px';
+            updateZoomDisplay(); 
         }
 
         function createFurniture(data) {
@@ -306,8 +420,10 @@
             handle.className = 'rotate-handle';
             block.appendChild(handle);
 
-            block.dataset.rotation = data.rotation || 0;
-            block.style.transform = `rotate(${data.rotation || 0}deg)`;
+            // 修復字串格式轉成數值
+            const rotValue = typeof data.rotation === 'string' ? parseFloat(data.rotation) : (data.rotation || 0);
+            block.dataset.rotation = rotValue;
+            block.style.transform = `rotate(${rotValue}deg)`;
             
             roomContainer.appendChild(block);
             makeDraggableAndRotatable(block, handle, blockId);
@@ -345,27 +461,23 @@
                 </div>
             `;
 
-            // List item selection
             li.addEventListener('mousedown', (e) => {
-                // Prevent selection if clicking layer buttons
                 if(!e.target.classList.contains('layer-btn')) {
                     selectBlock(id);
                 }
             });
 
-            // Drag and drop events
             li.addEventListener('dragstart', () => li.classList.add('dragging'));
             li.addEventListener('dragend', () => {
                 li.classList.remove('dragging');
                 updateZIndices();
             });
 
-            // Layer up/down button events
             const upBtn = li.querySelector('.up-btn');
             const downBtn = li.querySelector('.down-btn');
 
             upBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent selecting the item when clicking the button
+                e.stopPropagation();
                 const prevSibling = li.previousElementSibling;
                 if (prevSibling) {
                     listContainer.insertBefore(li, prevSibling);
@@ -377,12 +489,10 @@
                 e.stopPropagation();
                 const nextSibling = li.nextElementSibling;
                 if (nextSibling) {
-                    // Insert after the next sibling (before the one after that)
                     listContainer.insertBefore(nextSibling, li);
                     updateZIndices();
                 }
             });
-
 
             listContainer.insertBefore(li, listContainer.firstChild);
         }
@@ -679,8 +789,8 @@
 
                 if (isDragging) {
                     const rot = parseFloat(block.dataset.rotation);
-                    let newLeft = initialLeft + (loc.x - startX);
-                    let newTop = initialTop + (loc.y - startY);
+                    let newLeft = initialLeft + (loc.x - startX) / currentScale;
+                    let newTop = initialTop + (loc.y - startY) / currentScale;
                     
                     const bounds = getRotatedBounds(bW, bH, rot);
                     const offW = (bounds.width - bW) / 2;
