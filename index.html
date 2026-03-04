@@ -30,7 +30,7 @@
         h3 { margin-top: 0; color: #333; }
         hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
 
-        input[type="number"], input[type="text"] {
+        input[type="number"], input[type="text"], select {
             margin-right: 5px; margin-bottom: 5px; width: 70px; padding: 4px;
         }
 
@@ -177,6 +177,10 @@
             <input type="number" id="block-width" value="100">
             <input type="number" id="block-height" value="60">
         </div>
+        <div class="input-group">
+            <label>顏色:</label>
+            <select id="block-color" style="width: 155px;"></select>
+        </div>
         <button onclick="addBlock()" style="width: 100%; background-color: #4CAF50;">新增到房間</button>
 
         <button id="toggle-delete-btn" onclick="toggleDeleteMode()">開啟刪除模式</button>
@@ -241,6 +245,36 @@
         let blockCounter = 0;
         let selectedBlockId = null;
         let currentScale = 1;
+
+        const PALETTE_COLORS = [
+            '#4CAF50', '#2196F3', '#3F51B5', '#9C27B0',
+            '#E91E63', '#F44336', '#FF5722', '#FF9800',
+            '#FFC107', '#CDDC39', '#8BC34A', '#009688',
+            '#00BCD4', '#795548', '#607D8B', '#9E9E9E'
+        ];
+
+        function renderColorOptions(selectEl) {
+            selectEl.innerHTML = PALETTE_COLORS.map((color) => `<option value="${color}">${color}</option>`).join('');
+        }
+
+        function darkenHexColor(hex, factor = 0.65) {
+            const h = hex.replace('#', '');
+            const r = Math.max(0, Math.min(255, Math.round(parseInt(h.slice(0, 2), 16) * factor)));
+            const g = Math.max(0, Math.min(255, Math.round(parseInt(h.slice(2, 4), 16) * factor)));
+            const b = Math.max(0, Math.min(255, Math.round(parseInt(h.slice(4, 6), 16) * factor)));
+            return '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+        }
+
+        function applyBlockColor(block, color) {
+            const chosenColor = PALETTE_COLORS.includes(color) ? color : '#4CAF50';
+            block.dataset.color = chosenColor;
+            block.style.backgroundColor = chosenColor;
+            block.style.borderColor = block.dataset.pinned === 'true' ? '#555' : darkenHexColor(chosenColor, 0.65);
+        }
+
+        renderColorOptions(blockColorSelect);
+        renderColorOptions(editColorSelect);
+        blockColorSelect.value = '#4CAF50';
 
         // --- 預設房間資料與載入邏輯 ---
         function loadDefaultRoom() {
@@ -617,14 +651,13 @@
             
             if (isDeleteMode) block.classList.add('delete-mode-active');
             
-            if (data.pinned) {
-                block.classList.add('pinned');
-                block.dataset.pinned = "true";
-            }
-            if (data.translucent) {
-                block.classList.add('translucent');
-                block.dataset.translucent = "true";
-            }
+            block.dataset.pinned = data.pinned ? "true" : "false";
+            block.dataset.translucent = data.translucent ? "true" : "false";
+
+            if (data.pinned) block.classList.add('pinned');
+            if (data.translucent) block.classList.add('translucent');
+
+            applyBlockColor(block, data.color || '#4CAF50');
 
             const handle = document.createElement('div');
             handle.className = 'rotate-handle';
@@ -648,9 +681,10 @@
             const w = document.getElementById('block-width').value + 'px';
             const h = document.getElementById('block-height').value + 'px';
             const label = document.getElementById('block-label').value;
+            const color = blockColorSelect.value;
 
             createFurniture({
-                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0, pinned: false, translucent: false
+                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0, pinned: false, translucent: false, color: color
             });
         }
 
@@ -755,7 +789,8 @@
                         left: block.style.left,
                         rotation: block.dataset.rotation,
                         pinned: block.dataset.pinned === "true",
-                        translucent: block.dataset.translucent === "true"
+                        translucent: block.dataset.translucent === "true",
+                        color: block.dataset.color || '#4CAF50'
                     });
                 }
             });
@@ -881,6 +916,7 @@
             const isPinned = block.dataset.pinned === "true";
             block.dataset.pinned = !isPinned;
             block.classList.toggle('pinned', !isPinned);
+            block.style.borderColor = !isPinned ? '#555' : darkenHexColor(block.dataset.color || '#4CAF50', 0.65);
             
             const li = document.getElementById('li-' + selectedBlockId);
             if (li) li.classList.toggle('pinned', !isPinned);
