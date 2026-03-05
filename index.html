@@ -30,7 +30,7 @@
         h3 { margin-top: 0; color: #333; }
         hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
 
-        input[type="number"], input[type="text"], select {
+        input[type="number"], input[type="text"] {
             margin-right: 5px; margin-bottom: 5px; width: 70px; padding: 4px;
         }
 
@@ -81,7 +81,7 @@
         }
 
         .furniture-block.pinned {
-            border: 2px solid #555;
+            border: 2px solid #555 !important;
             background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px);
             cursor: not-allowed;
         }
@@ -177,10 +177,6 @@
             <input type="number" id="block-width" value="100">
             <input type="number" id="block-height" value="60">
         </div>
-        <div class="input-group">
-            <label>顏色:</label>
-            <select id="block-color" style="width: 155px;"></select>
-        </div>
         <button onclick="addBlock()" style="width: 100%; background-color: #4CAF50;">新增到房間</button>
 
         <button id="toggle-delete-btn" onclick="toggleDeleteMode()">開啟刪除模式</button>
@@ -246,212 +242,29 @@
         let selectedBlockId = null;
         let currentScale = 1;
 
-        const PALETTE_COLORS = [
-            '#4CAF50', '#2196F3', '#3F51B5', '#9C27B0',
-            '#E91E63', '#F44336', '#FF5722', '#FF9800',
-            '#FFC107', '#CDDC39', '#8BC34A', '#009688',
-            '#00BCD4', '#795548', '#607D8B', '#9E9E9E'
-        ];
-
-        function renderColorOptions(selectEl) {
-            selectEl.innerHTML = PALETTE_COLORS.map((color) => `<option value="${color}">${color}</option>`).join('');
-        }
-
-        function darkenHexColor(hex, factor = 0.65) {
-            const h = hex.replace('#', '');
-            const r = Math.max(0, Math.min(255, Math.round(parseInt(h.slice(0, 2), 16) * factor)));
-            const g = Math.max(0, Math.min(255, Math.round(parseInt(h.slice(2, 4), 16) * factor)));
-            const b = Math.max(0, Math.min(255, Math.round(parseInt(h.slice(4, 6), 16) * factor)));
-            return '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
-        }
-
-        function applyBlockColor(block, color) {
-            const chosenColor = PALETTE_COLORS.includes(color) ? color : '#4CAF50';
-            block.dataset.color = chosenColor;
-            block.style.backgroundColor = chosenColor;
-            block.style.borderColor = block.dataset.pinned === 'true' ? '#555' : darkenHexColor(chosenColor, 0.65);
-        }
-
-        renderColorOptions(blockColorSelect);
-        renderColorOptions(editColorSelect);
-        blockColorSelect.value = '#4CAF50';
-
         // --- 預設房間資料與載入邏輯 ---
         function loadDefaultRoom() {
             const defaultData = [
-              {
-                "label": "柱子",
-                "width": "900px",
-                "height": "940px",
-                "top": "1786.67px",
-                "left": "4062.72px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "橫梁",
-                "width": "4240px",
-                "height": "480px",
-                "top": "2250px",
-                "left": "0px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "可開窗戶",
-                "width": "750px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "3306.82px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": true
-              },
-              {
-                "label": "封閉窗戶",
-                "width": "650px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "2650.92px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": true
-              },
-              {
-                "label": "封閉窗",
-                "width": "850px",
-                "height": "170px",
-                "top": "556.667px",
-                "left": "4623.34px",
-                "rotation": "90",
-                "pinned": true,
-                "translucent": true
-              },
-              {
-                "label": "可開窗",
-                "width": "720px",
-                "height": "170px",
-                "top": "1341.67px",
-                "left": "4688.33px",
-                "rotation": "90",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "門口",
-                "width": "865px",
-                "height": "865px",
-                "top": "0px",
-                "left": "0px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "雙人床",
-                "width": "1520px",
-                "height": "1880px",
-                "top": "0px",
-                "left": "1572.72px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "220px",
-                "height": "170px",
-                "top": "25px",
-                "left": "4936.36px",
-                "rotation": "90",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "1790px",
-                "height": "455px",
-                "top": "667.5px",
-                "left": "3837.28px",
-                "rotation": "90",
-                "pinned": false,
-                "translucent": true
-              },
-              {
-                "label": "雙人床+兩側",
-                "width": "3040px",
-                "height": "1880px",
-                "top": "0px",
-                "left": "1018.64px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "書桌",
-                "width": "800px",
-                "height": "1650px",
-                "top": "0px",
-                "left": "4150.45px",
-                "rotation": "0",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "電視",
-                "width": "1293px",
-                "height": "269px",
-                "top": "512px",
-                "left": "4169.54px",
-                "rotation": "90",
-                "pinned": false,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "940px",
-                "height": "170px",
-                "top": "2170.91px",
-                "left": "4581.82px",
-                "rotation": "90",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "1070px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "4061.82px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "牆壁",
-                "width": "2670px",
-                "height": "170px",
-                "top": "2730px",
-                "left": "0px",
-                "rotation": "0",
-                "pinned": true,
-                "translucent": false
-              },
-              {
-                "label": "衣櫃",
-                "width": "1690px",
-                "height": "800px",
-                "top": "1479.55px",
-                "left": "-445px",
-                "rotation": "270",
-                "pinned": false,
-                "translucent": false
-              }
+              { "label": "柱子", "width": "900px", "height": "940px", "top": "1786.67px", "left": "4062.72px", "rotation": "0", "pinned": true, "translucent": false },
+              { "label": "橫梁", "width": "4240px", "height": "480px", "top": "2250px", "left": "0px", "rotation": "0", "pinned": false, "translucent": true },
+              { "label": "可開窗戶", "width": "750px", "height": "170px", "top": "2730px", "left": "3306.82px", "rotation": "0", "pinned": true, "translucent": true },
+              { "label": "封閉窗戶", "width": "650px", "height": "170px", "top": "2730px", "left": "2650.92px", "rotation": "0", "pinned": true, "translucent": true },
+              { "label": "封閉窗", "width": "850px", "height": "170px", "top": "556.667px", "left": "4623.34px", "rotation": "90", "pinned": true, "translucent": true },
+              { "label": "可開窗", "width": "720px", "height": "170px", "top": "1341.67px", "left": "4688.33px", "rotation": "90", "pinned": false, "translucent": true },
+              { "label": "門口", "width": "865px", "height": "865px", "top": "0px", "left": "0px", "rotation": "0", "pinned": false, "translucent": true },
+              { "label": "雙人床", "width": "1520px", "height": "1880px", "top": "0px", "left": "1572.72px", "rotation": "0", "pinned": false, "translucent": false },
+              { "label": "牆壁", "width": "220px", "height": "170px", "top": "25px", "left": "4936.36px", "rotation": "90", "pinned": true, "translucent": false },
+              { "label": "牆壁", "width": "1790px", "height": "455px", "top": "667.5px", "left": "3837.28px", "rotation": "90", "pinned": false, "translucent": true },
+              { "label": "雙人床+兩側", "width": "3040px", "height": "1880px", "top": "0px", "left": "1018.64px", "rotation": "0", "pinned": false, "translucent": false },
+              { "label": "書桌", "width": "800px", "height": "1650px", "top": "0px", "left": "4150.45px", "rotation": "0", "pinned": false, "translucent": false },
+              { "label": "電視", "width": "1293px", "height": "269px", "top": "512px", "left": "4169.54px", "rotation": "90", "pinned": false, "translucent": false },
+              { "label": "牆壁", "width": "940px", "height": "170px", "top": "2170.91px", "left": "4581.82px", "rotation": "90", "pinned": true, "translucent": false },
+              { "label": "牆壁", "width": "1070px", "height": "170px", "top": "2730px", "left": "4061.82px", "rotation": "0", "pinned": true, "translucent": false },
+              { "label": "牆壁", "width": "2670px", "height": "170px", "top": "2730px", "left": "0px", "rotation": "0", "pinned": true, "translucent": false },
+              { "label": "衣櫃", "width": "1690px", "height": "800px", "top": "1479.55px", "left": "-445px", "rotation": "270", "pinned": false, "translucent": false }
             ];
 
-            // 自動擴充房間大小以容納預設格局 (約 5200x3000)
+            // 自動擴充房間大小以容納預設格局
             document.getElementById('room-width').value = 5200;
             document.getElementById('room-height').value = 3000;
             updateRoomSize();
@@ -472,7 +285,6 @@
         // --- 縮放控制邏輯 ---
         function changeZoom(delta) {
             currentScale += delta;
-            // 由於 5000 像素非常大，最小縮放可以到 0.05 (5%)
             if (currentScale < 0.05) currentScale = 0.05;
             if (currentScale > 3.0) currentScale = 3.0;
             updateZoomDisplay();
@@ -489,26 +301,11 @@
 
             if (roomW <= 0 || viewportWidth <= 0) return;
 
-            // 使用目前螢幕可視寬度做「剛好」縮放
             currentScale = viewportWidth / roomW;
             if (currentScale < 0.05) currentScale = 0.05;
             if (currentScale > 3.0) currentScale = 3.0;
             updateZoomDisplay();
         }
-
-        function fitZoomToWidth() {
-            const roomW = Number(document.getElementById('room-width').value) || roomContainer.offsetWidth;
-            const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-
-            if (roomW <= 0 || viewportWidth <= 0) return;
-
-            // 使用目前螢幕可視寬度做「剛好」縮放
-            currentScale = viewportWidth / roomW;
-            if (currentScale < 0.05) currentScale = 0.05;
-            if (currentScale > 3.0) currentScale = 3.0;
-            updateZoomDisplay();
-        }
-
 
         function updateBlockTextReadability() {
             const labelBaseSize = 13;
@@ -657,13 +454,10 @@
             if (data.pinned) block.classList.add('pinned');
             if (data.translucent) block.classList.add('translucent');
 
-            applyBlockColor(block, data.color || '#4CAF50');
-
             const handle = document.createElement('div');
             handle.className = 'rotate-handle';
             block.appendChild(handle);
 
-            // 修復字串格式轉成數值
             const rotValue = typeof data.rotation === 'string' ? parseFloat(data.rotation) : (data.rotation || 0);
             block.dataset.rotation = rotValue;
             block.style.transform = `rotate(${rotValue}deg)`;
@@ -681,10 +475,9 @@
             const w = document.getElementById('block-width').value + 'px';
             const h = document.getElementById('block-height').value + 'px';
             const label = document.getElementById('block-label').value;
-            const color = blockColorSelect.value;
 
             createFurniture({
-                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0, pinned: false, translucent: false, color: color
+                width: w, height: h, label: label, left: '20px', top: '20px', rotation: 0, pinned: false, translucent: false
             });
         }
 
@@ -789,8 +582,7 @@
                         left: block.style.left,
                         rotation: block.dataset.rotation,
                         pinned: block.dataset.pinned === "true",
-                        translucent: block.dataset.translucent === "true",
-                        color: block.dataset.color || '#4CAF50'
+                        translucent: block.dataset.translucent === "true"
                     });
                 }
             });
@@ -916,7 +708,6 @@
             const isPinned = block.dataset.pinned === "true";
             block.dataset.pinned = !isPinned;
             block.classList.toggle('pinned', !isPinned);
-            block.style.borderColor = !isPinned ? '#555' : darkenHexColor(block.dataset.color || '#4CAF50', 0.65);
             
             const li = document.getElementById('li-' + selectedBlockId);
             if (li) li.classList.toggle('pinned', !isPinned);
